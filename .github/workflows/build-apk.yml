@@ -67,8 +67,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          tail -n 150 build.log > failure_tail.txt
-          gh issue create --title "Build Failure Log" --body-file failure_tail.txt || true
+          grep -E "(e: |error:|CompilationErrorException)" build.log -C 3 > failure_tail.txt || true
+          if [ ! -s failure_tail.txt ]; then
+            tail -n 150 build.log > failure_tail.txt
+          fi
+          gh issue create --title "Kotlin Compiler Errors" --body-file failure_tail.txt || true
 
       - name: Prepare APK Artifact
         run: |
