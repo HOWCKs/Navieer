@@ -43,6 +43,7 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
+        freeCompilerArgs = freeCompilerArgs + listOf("-Xskip-metadata-version-check")
     }
 
     buildFeatures {
@@ -56,6 +57,12 @@ android {
         jniLibs {
             useLegacyPackaging = true
         }
+    }
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions {
+        freeCompilerArgs.add("-Xskip-metadata-version-check")
     }
 }
 
