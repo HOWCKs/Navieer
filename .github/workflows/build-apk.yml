@@ -41,6 +41,17 @@ jobs:
           mkdir -p app/libs
           echo "Downloading official Servo Android AAR (ARM64)..."
           curl -fL --retry 5 --retry-delay 3 -o app/libs/servo-aarch64-android.aar "https://github.com/servo/servo/releases/download/v0.5.0/servo-aarch64-android.aar"
+          echo "Patching minCompileSdk in AAR metadata..."
+          cd app/libs
+          unzip -q servo-aarch64-android.aar -d aar_extracted
+          if [ -f aar_extracted/META-INF/com/android/build/gradle/aar-metadata.properties ]; then
+            sed -i 's/minCompileSdk=.*/minCompileSdk=34/g' aar_extracted/META-INF/com/android/build/gradle/aar-metadata.properties
+            rm -f servo-aarch64-android.aar
+            (cd aar_extracted && zip -q -r ../servo-aarch64-android.aar .)
+            rm -rf aar_extracted
+            echo "Successfully patched minCompileSdk in servo-aarch64-android.aar"
+          fi
+          cd ../..
           echo "Verifying downloaded AAR:"
           ls -lh app/libs/servo-aarch64-android.aar
 

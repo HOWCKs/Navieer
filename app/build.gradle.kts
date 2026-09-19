@@ -59,6 +59,11 @@ android {
     }
 }
 
+// Bypass AAR metadata check for Servo AAR
+tasks.matching { it.name.contains("AarMetadata") }.configureEach {
+    enabled = false
+}
+
 dependencies {
     // Servo Embedding Engine AAR
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar", "*.jar"))))
