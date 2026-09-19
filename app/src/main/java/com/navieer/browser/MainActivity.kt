@@ -8,14 +8,11 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -24,70 +21,105 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.getSystemService
-import androidx.preference.PreferenceManager
+import androidx.lifecycle.lifecycleScope
+import com.navieer.browser.data.AdBlockRules
+import com.navieer.browser.data.BrowserPreferences
+import com.navieer.browser.data.SearchEngine
 import com.navieer.browser.model.BookmarkItem
 import com.navieer.browser.model.BrowserTab
+import com.navieer.browser.model.DownloadItem
 import com.navieer.browser.model.HistoryItem
+import com.navieer.browser.ui.components.*
 import com.navieer.browser.ui.theme.NavieerTheme
+import kotlinx.coroutines.launch
 import org.servo.servoview.Servo
 import org.servo.servoview.ServoView
 
 class MainActivity : ComponentActivity(), Servo.Client {
     private lateinit var servoView: ServoView
+    private lateinit var browserPreferences: BrowserPreferences
 
+    // Navigation and Page States
     private val canGoBackState = mutableStateOf(false)
     private val canGoForwardState = mutableStateOf(false)
-
-    private val currentUrlState = mutableStateOf("https://servo.org")
-    private val currentTitleState = mutableStateOf("Servo - Web Engine")
+    private val currentUrlState = mutableStateOf("navieer://home")
+    private val currentTitleState = mutableStateOf("Nova Aba")
     private val isLoadingState = mutableStateOf(false)
     private val alertMessageState = mutableStateOf<String?>(null)
+    private val dynamicSiteColorState = mutableStateOf<Color?>(null)
 
+    // User Gesture States: Collapsing Toolbar and Edge Navigation Feedback
+    private val isOmniboxVisibleState = mutableStateOf(true)
+    private val edgeSwipeFeedbackState = mutableStateOf<String?>(null)
+
+    // Tab Management
     private val tabs = mutableStateListOf<BrowserTab>()
     private val activeTabIdState = mutableStateOf("")
 
+    // Persistent Collections
     private val historyList = mutableStateListOf<HistoryItem>()
     private val bookmarkList = mutableStateListOf<BookmarkItem>()
+    private val downloadList = mutableStateListOf<DownloadItem>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val prefs = PreferenceManager.getDefaultSharedPreferences(applicationContext)
-        val experimentalMode = prefs.getBoolean("experimental_mode", false)
+        browserPreferences = BrowserPreferences(applicationContext)
 
         val initialUrl = if (Intent.ACTION_VIEW == intent.action && intent.data != null) {
             intent.data.toString()
         } else {
-            "https://servo.org"
+            "navieer://home"
         }
 
-        val firstTab = BrowserTab(url = initialUrl, title = "Servo Engine")
+        val firstTab = BrowserTab(url = initialUrl, title = if (initialUrl == "navieer://home") "Nova Aba" else "Servo Engine")
         tabs.add(firstTab)
         activeTabIdState.value = firstTab.id
+        currentUrlState.value = initialUrl
 
-        // Initialize ServoView with v0.5.0 API
+        // Initialize Native ServoView (Servo v0.5.0 embedding)
         servoView = ServoView(this).apply {
             setClient(this@MainActivity)
             setServoArgs(
                 intent.getStringExtra("servoargs"),
                 intent.getStringExtra("servolog"),
-                experimentalMode
+                false
             )
-            loadUri(initialUrl)
+            if (initialUrl != "navieer://home") {
+                loadUri(initialUrl)
+            }
         }
 
         setContent {
-            NavieerTheme {
-                MainBrowserScreen()
+            val isAmoledMode by browserPreferences.amoledModeFlow.collectAsState(initial = true)
+            val isAdBlockEnabled by browserPreferences.adBlockEnabledFlow.collectAsState(initial = true)
+            val isDesktopMode by browserPreferences.desktopModeFlow.collectAsState(initial = false)
+            val isExperimentalServo by browserPreferences.servoExperimentalFlow.collectAsState(initial = false)
+            val isWebGpu by browserPreferences.servoWebGpuFlow.collectAsState(initial = false)
+            val isForceDark by browserPreferences.forceDarkModeFlow.collectAsState(initial = false)
+            val currentSearchEngine by browserPreferences.searchEngineFlow.collectAsState(initial = SearchEngine.DUCKDUCKGO)
+            val customSearchUrl by browserPreferences.customSearchUrlFlow.collectAsState(initial = "https://duckduckgo.com/?q=%s")
+
+            NavieerTheme(
+                isAmoledMode = isAmoledMode,
+                dynamicSiteColor = dynamicSiteColorState.value
+            ) {
+                MainBrowserScreen(
+                    isAmoledMode = isAmoledMode,
+                    isAdBlockEnabled = isAdBlockEnabled,
+                    isDesktopMode = isDesktopMode,
+                    isExperimentalServo = isExperimentalServo,
+                    isWebGpu = isWebGpu,
+                    isForceDark = isForceDark,
+                    currentSearchEngine = currentSearchEngine,
+                    customSearchUrl = customSearchUrl
+                )
             }
         }
     }
@@ -99,535 +131,357 @@ class MainActivity : ComponentActivity(), Servo.Client {
 
     override fun onResume() {
         super.onResume()
-        val prefs = PreferenceManager.getDefaultSharedPreferences(applicationContext)
-        val experimentalMode = prefs.getBoolean("experimental_mode", false)
-        servoView.setExperimentalMode(experimentalMode)
         servoView.onResume()
     }
 
-    private fun navigateTo(input: String) {
+    private fun navigateTo(input: String, searchEngine: SearchEngine, customSearchUrl: String) {
         val trimmed = input.trim()
         if (trimmed.isEmpty()) return
 
-        val url = when {
-            trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("file://") -> trimmed
-            trimmed.contains(".") && !trimmed.contains(" ") -> "https://$trimmed"
-            else -> "https://duckduckgo.com/?q=${android.net.Uri.encode(trimmed)}"
+        if (trimmed == "navieer://home") {
+            currentUrlState.value = "navieer://home"
+            currentTitleState.value = "Nova Aba"
+            return
         }
 
-        currentUrlState.value = url
-        servoView.loadUri(url)
+        val targetUrl = when {
+            trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("file://") -> trimmed
+            trimmed.contains(".") && !trimmed.contains(" ") -> "https://$trimmed"
+            else -> {
+                val encoded = android.net.Uri.encode(trimmed)
+                if (searchEngine == SearchEngine.CUSTOM && customSearchUrl.contains("%s")) {
+                    customSearchUrl.replace("%s", encoded)
+                } else {
+                    searchEngine.searchUrl.replace("%s", encoded)
+                }
+            }
+        }
+
+        // AdBlock verification
+        if (AdBlockRules.isAdOrTracker(targetUrl)) {
+            Toast.makeText(this, "Anúncio/Rastreador bloqueado pelo Navieer Shield", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        currentUrlState.value = targetUrl
+        val activeTab = tabs.find { it.id == activeTabIdState.value }
+        activeTab?.url = targetUrl
+
+        servoView.loadUri(targetUrl)
         servoView.requestFocus()
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    private fun MainBrowserScreen() {
-        var urlInput by remember { mutableStateOf(currentUrlState.value) }
+    private fun MainBrowserScreen(
+        isAmoledMode: Boolean,
+        isAdBlockEnabled: Boolean,
+        isDesktopMode: Boolean,
+        isExperimentalServo: Boolean,
+        isWebGpu: Boolean,
+        isForceDark: Boolean,
+        currentSearchEngine: SearchEngine,
+        customSearchUrl: String
+    ) {
         var showTabsSheet by remember { mutableStateOf(false) }
-        var showHistoryDialog by remember { mutableStateOf(false) }
-        var showBookmarksDialog by remember { mutableStateOf(false) }
-        var showSettingsDialog by remember { mutableStateOf(false) }
-        var showMenu by remember { mutableStateOf(false) }
+        var showHistorySheet by remember { mutableStateOf(false) }
+        var showBookmarksSheet by remember { mutableStateOf(false) }
+        var showDownloadsSheet by remember { mutableStateOf(false) }
+        var showSettingsSheet by remember { mutableStateOf(false) }
+        var showFlagsSheet by remember { mutableStateOf(false) }
+        var isReaderModeActive by remember { mutableStateOf(false) }
 
-        val focusManager = LocalFocusManager.current
+        val screenWidthPx = with(LocalDensity.current) { LocalConfiguration.current.screenWidthDp.dp.toPx() }
 
-        LaunchedEffect(currentUrlState.value) {
-            urlInput = currentUrlState.value
-        }
-
-        BackHandler(enabled = canGoBackState.value) {
+        BackHandler(enabled = canGoBackState.value && currentUrlState.value != "navieer://home") {
             servoView.goBack()
         }
 
-        Scaffold(
-            topBar = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surface)
-                        .statusBarsPadding()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Back Button
-                        IconButton(
-                            onClick = { servoView.goBack() },
-                            enabled = canGoBackState.value,
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowBack,
-                                contentDescription = "Voltar",
-                                tint = if (canGoBackState.value) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                            )
-                        }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                // Edge Swipe Detection (Back / Forward Gestures) and Collapsing Scroll Detection
+                .pointerInput(Unit) {
+                    detectDragGestures(
+                        onDragEnd = {
+                            edgeSwipeFeedbackState.value = null
+                        },
+                        onDragCancel = {
+                            edgeSwipeFeedbackState.value = null
+                        },
+                        onDrag = { change, dragAmount ->
+                            change.consume()
 
-                        // Forward Button
-                        IconButton(
-                            onClick = { servoView.goForward() },
-                            enabled = canGoForwardState.value,
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowForward,
-                                contentDescription = "Avançar",
-                                tint = if (canGoForwardState.value) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                            )
-                        }
-
-                        // URL / Omnibox Input
-                        OutlinedTextField(
-                            value = urlInput,
-                            onValueChange = { urlInput = it },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp)
-                                .padding(horizontal = 4.dp),
-                            singleLine = true,
-                            shape = RoundedCornerShape(24.dp),
-                            placeholder = {
-                                Text(
-                                    text = "Pesquisar ou digitar URL",
-                                    fontSize = 13.sp,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            },
-                            leadingIcon = {
-                                val isSecure = currentUrlState.value.startsWith("https://")
-                                Icon(
-                                    imageVector = if (isSecure) Icons.Default.Lock else Icons.Default.Public,
-                                    contentDescription = if (isSecure) "Seguro" else "Web",
-                                    tint = if (isSecure) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            },
-                            trailingIcon = {
-                                if (isLoadingState.value) {
-                                    IconButton(onClick = { servoView.stop() }, modifier = Modifier.size(24.dp)) {
-                                        Icon(
-                                            imageVector = Icons.Default.Close,
-                                            contentDescription = "Parar",
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    }
-                                } else {
-                                    IconButton(onClick = { servoView.reload() }, modifier = Modifier.size(24.dp)) {
-                                        Icon(
-                                            imageVector = Icons.Default.Refresh,
-                                            contentDescription = "Recarregar",
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    }
-                                }
-                            },
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Uri,
-                                imeAction = ImeAction.Go
-                            ),
-                            keyboardActions = KeyboardActions(
-                                onGo = {
-                                    focusManager.clearFocus()
-                                    navigateTo(urlInput)
-                                }
-                            ),
-                            textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = Color.Transparent
-                            )
-                        )
-
-                        // Tabs Button with Counter Badge
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .padding(start = 2.dp)
-                                .size(34.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { showTabsSheet = true }
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                        ) {
-                            Text(
-                                text = "${tabs.size}",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        // Menu Overflow Button
-                        Box {
-                            IconButton(
-                                onClick = { showMenu = true },
-                                modifier = Modifier.size(36.dp)
-                            ) {
-                                Icon(imageVector = Icons.Default.MoreVert, contentDescription = "Menu")
+                            // Vertical drag: Collapsing and expanding toolbar
+                            if (dragAmount.y < -15f) {
+                                isOmniboxVisibleState.value = false // Scroll down -> Hide Omnibox
+                            } else if (dragAmount.y > 15f) {
+                                isOmniboxVisibleState.value = true // Scroll up -> Show Omnibox
                             }
 
-                            DropdownMenu(
-                                expanded = showMenu,
-                                onDismissRequest = { showMenu = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text("Nova Aba") },
-                                    leadingIcon = { Icon(Icons.Default.Add, null) },
-                                    onClick = {
-                                        showMenu = false
-                                        val newTab = BrowserTab(url = "https://servo.org", title = "Nova Aba")
-                                        tabs.add(newTab)
-                                        activeTabIdState.value = newTab.id
-                                        servoView.loadUri("https://servo.org")
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Adicionar aos Favoritos") },
-                                    leadingIcon = { Icon(Icons.Default.Star, null) },
-                                    onClick = {
-                                        showMenu = false
-                                        bookmarkList.add(
-                                            BookmarkItem(
-                                                title = currentTitleState.value.ifEmpty { currentUrlState.value },
-                                                url = currentUrlState.value
-                                            )
-                                        )
-                                        Toast.makeText(this@MainActivity, "Favorito salvo!", Toast.LENGTH_SHORT).show()
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Favoritos") },
-                                    leadingIcon = { Icon(Icons.Default.Bookmark, null) },
-                                    onClick = {
-                                        showMenu = false
-                                        showBookmarksDialog = true
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Histórico") },
-                                    leadingIcon = { Icon(Icons.Default.History, null) },
-                                    onClick = {
-                                        showMenu = false
-                                        showHistoryDialog = true
-                                    }
-                                )
-                                HorizontalDivider()
-                                DropdownMenuItem(
-                                    text = { Text("Configurações") },
-                                    leadingIcon = { Icon(Icons.Default.Settings, null) },
-                                    onClick = {
-                                        showMenu = false
-                                        showSettingsDialog = true
-                                    }
-                                )
+                            // Edge Gestures for Navigation
+                            val touchX = change.position.x
+                            if (touchX < 80f && dragAmount.x > 25f && canGoBackState.value) {
+                                edgeSwipeFeedbackState.value = "Voltar"
+                                servoView.goBack()
+                            } else if (touchX > screenWidthPx - 80f && dragAmount.x < -25f && canGoForwardState.value) {
+                                edgeSwipeFeedbackState.value = "Avançar"
+                                servoView.goForward()
                             }
                         }
-                    }
-
-                    // Loading Progress Indicator
-                    if (isLoadingState.value) {
-                        LinearProgressIndicator(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(2.dp),
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
+                    )
                 }
-            }
-        ) { innerPadding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            ) {
-                // Servo native SurfaceView rendering container via AndroidView
+        ) {
+            // Main Web View or Start Page
+            if (currentUrlState.value == "navieer://home") {
+                SpeedDialView(
+                    onNavigate = { url ->
+                        navigateTo(url, currentSearchEngine, customSearchUrl)
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
                 AndroidView(
                     factory = { servoView },
                     modifier = Modifier.fillMaxSize()
                 )
+            }
 
-                // Alert Dialog from web page
-                alertMessageState.value?.let { alertMessage ->
-                    AlertDialog(
-                        onDismissRequest = { alertMessageState.value = null },
-                        title = { Text("Mensagem da Página") },
-                        text = { Text(alertMessage) },
-                        confirmButton = {
-                            TextButton(onClick = { alertMessageState.value = null }) {
-                                Text("OK")
-                            }
-                        }
+            // Floating Dynamic Collapsing Omnibox (Material 3 Expressive)
+            OmniboxFloatingBar(
+                url = if (currentUrlState.value == "navieer://home") "" else currentUrlState.value,
+                isLoading = isLoadingState.value,
+                tabCount = tabs.size,
+                isDesktopMode = isDesktopMode,
+                isAdBlockActive = isAdBlockEnabled,
+                isVisible = isOmniboxVisibleState.value,
+                onNavigate = { input ->
+                    navigateTo(input, currentSearchEngine, customSearchUrl)
+                },
+                onReload = { servoView.reload() },
+                onStop = { servoView.stop() },
+                onToggleDesktop = {
+                    val newMode = !isDesktopMode
+                    lifecycleScope.launch {
+                        browserPreferences.setDesktopMode(newMode)
+                        servoView.reload()
+                        Toast.makeText(this@MainActivity, if (newMode) "Modo Desktop Ativado" else "Modo Mobile Ativado", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                onToggleReaderMode = {
+                    isReaderModeActive = !isReaderModeActive
+                },
+                onOpenTabs = { showTabsSheet = true },
+                onOpenHistory = { showHistorySheet = true },
+                onOpenBookmarks = { showBookmarksSheet = true },
+                onOpenDownloads = { showDownloadsSheet = true },
+                onOpenSettings = { showSettingsSheet = true },
+                onOpenFlags = { showFlagsSheet = true },
+                onAddBookmark = {
+                    bookmarkList.add(
+                        BookmarkItem(
+                            title = currentTitleState.value.ifEmpty { currentUrlState.value },
+                            url = currentUrlState.value
+                        )
                     )
-                }
+                    Toast.makeText(this@MainActivity, "Favorito adicionado!", Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .statusBarsPadding()
+            )
 
-                // Tabs Modal Bottom Sheet
-                if (showTabsSheet) {
-                    ModalBottomSheet(
-                        onDismissRequest = { showTabsSheet = false }
+            // Visual Edge-Swipe Feedback Indicator
+            edgeSwipeFeedbackState.value?.let { gestureText ->
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .clip(CircleShape),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
+                    tonalElevation = 6.dp
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Abas Abertas (${tabs.size})",
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Button(
-                                    onClick = {
-                                        val newTab = BrowserTab(url = "https://servo.org", title = "Nova Aba")
-                                        tabs.add(newTab)
-                                        activeTabIdState.value = newTab.id
-                                        servoView.loadUri("https://servo.org")
-                                        showTabsSheet = false
-                                    }
-                                ) {
-                                    Icon(Icons.Default.Add, contentDescription = null)
-                                    Spacer(Modifier.width(4.dp))
-                                    Text("Nova Aba")
-                                }
-                            }
-
-                            Spacer(Modifier.height(12.dp))
-
-                            LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                                items(tabs) { tab ->
-                                    val isSelected = tab.id == activeTabIdState.value
-                                    Card(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 4.dp)
-                                            .clickable {
-                                                activeTabIdState.value = tab.id
-                                                servoView.loadUri(tab.url)
-                                                showTabsSheet = false
-                                            },
-                                        colors = CardDefaults.cardColors(
-                                            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
-                                        )
-                                    ) {
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(12.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Text(
-                                                    text = tab.title,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis
-                                                )
-                                                Text(
-                                                    text = tab.url,
-                                                    fontSize = 12.sp,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis
-                                                )
-                                            }
-                                            if (tabs.size > 1) {
-                                                IconButton(
-                                                    onClick = {
-                                                        val index = tabs.indexOf(tab)
-                                                        tabs.remove(tab)
-                                                        if (isSelected) {
-                                                            val nextTab = tabs.getOrNull(index.coerceAtMost(tabs.size - 1))
-                                                            if (nextTab != null) {
-                                                                activeTabIdState.value = nextTab.id
-                                                                servoView.loadUri(nextTab.url)
-                                                            }
-                                                        }
-                                                    }
-                                                ) {
-                                                    Icon(Icons.Default.Close, contentDescription = "Fechar Aba")
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        Icon(
+                            imageVector = if (gestureText == "Voltar") Icons.Default.ArrowBack else Icons.Default.ArrowForward,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(gestureText, color = MaterialTheme.colorScheme.onPrimaryContainer)
                     }
                 }
+            }
 
-                // History Dialog
-                if (showHistoryDialog) {
-                    AlertDialog(
-                        onDismissRequest = { showHistoryDialog = false },
-                        title = {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text("Histórico")
-                                if (historyList.isNotEmpty()) {
-                                    TextButton(onClick = { historyList.clear() }) {
-                                        Text("Limpar", color = MaterialTheme.colorScheme.error)
-                                    }
+            // Reader Mode Overlay
+            if (isReaderModeActive) {
+                ReaderView(
+                    title = currentTitleState.value,
+                    url = currentUrlState.value,
+                    content = "",
+                    onClose = { isReaderModeActive = false }
+                )
+            }
+
+            // JavaScript Alert Dialog
+            alertMessageState.value?.let { alertMessage ->
+                AlertDialog(
+                    onDismissRequest = { alertMessageState.value = null },
+                    title = { Text("Mensagem da Página") },
+                    text = { Text(alertMessage) },
+                    confirmButton = {
+                        TextButton(onClick = { alertMessageState.value = null }) {
+                            Text("OK")
+                        }
+                    }
+                )
+            }
+
+            // Tab Switcher Grid Sheet (Grade de Cartões)
+            if (showTabsSheet) {
+                TabGridView(
+                    tabs = tabs,
+                    activeTabId = activeTabIdState.value,
+                    onTabSelected = { tab ->
+                        activeTabIdState.value = tab.id
+                        currentUrlState.value = tab.url
+                        currentTitleState.value = tab.title
+                        if (tab.url != "navieer://home") {
+                            servoView.loadUri(tab.url)
+                        }
+                    },
+                    onTabClosed = { tab ->
+                        val index = tabs.indexOf(tab)
+                        tabs.remove(tab)
+                        if (tab.id == activeTabIdState.value) {
+                            val nextTab = tabs.getOrNull(index.coerceAtMost(tabs.size - 1))
+                            if (nextTab != null) {
+                                activeTabIdState.value = nextTab.id
+                                currentUrlState.value = nextTab.url
+                                currentTitleState.value = nextTab.title
+                                if (nextTab.url != "navieer://home") {
+                                    servoView.loadUri(nextTab.url)
                                 }
-                            }
-                        },
-                        text = {
-                            if (historyList.isEmpty()) {
-                                Text("Nenhum histórico recente registrado.")
                             } else {
-                                LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                                    items(historyList.reversed()) { item ->
-                                        Column(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clickable {
-                                                    showHistoryDialog = false
-                                                    navigateTo(item.url)
-                                                }
-                                                .padding(vertical = 6.dp)
-                                        ) {
-                                            Text(item.title, fontWeight = FontWeight.Medium, maxLines = 1)
-                                            Text(
-                                                item.url,
-                                                fontSize = 11.sp,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-                                        }
-                                        HorizontalDivider()
-                                    }
-                                }
-                            }
-                        },
-                        confirmButton = {
-                            TextButton(onClick = { showHistoryDialog = false }) {
-                                Text("Fechar")
+                                val fresh = BrowserTab(url = "navieer://home", title = "Nova Aba")
+                                tabs.add(fresh)
+                                activeTabIdState.value = fresh.id
+                                currentUrlState.value = "navieer://home"
                             }
                         }
-                    )
-                }
-
-                // Bookmarks Dialog
-                if (showBookmarksDialog) {
-                    AlertDialog(
-                        onDismissRequest = { showBookmarksDialog = false },
-                        title = { Text("Favoritos") },
-                        text = {
-                            if (bookmarkList.isEmpty()) {
-                                Text("Nenhum favorito salvo ainda.")
-                            } else {
-                                LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                                    items(bookmarkList) { bm ->
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clickable {
-                                                    showBookmarksDialog = false
-                                                    navigateTo(bm.url)
-                                                }
-                                                .padding(vertical = 6.dp),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Text(bm.title, fontWeight = FontWeight.Medium, maxLines = 1)
-                                                Text(
-                                                    bm.url,
-                                                    fontSize = 11.sp,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis
-                                                )
-                                            }
-                                            IconButton(
-                                                onClick = { bookmarkList.remove(bm) },
-                                                modifier = Modifier.size(24.dp)
-                                            ) {
-                                                Icon(Icons.Default.Delete, contentDescription = "Remover", modifier = Modifier.size(16.dp))
-                                            }
-                                        }
-                                        HorizontalDivider()
-                                    }
-                                }
-                            }
-                        },
-                        confirmButton = {
-                            TextButton(onClick = { showBookmarksDialog = false }) {
-                                Text("Fechar")
-                            }
+                    },
+                    onNewTab = { isIncognito ->
+                        val newTab = BrowserTab(
+                            url = "navieer://home",
+                            title = if (isIncognito) "Aba Privada" else "Nova Aba",
+                            isIncognito = isIncognito,
+                            previewColor = if (isIncognito) 0xFFFB7185 else 0xFF6366F1
+                        )
+                        tabs.add(newTab)
+                        activeTabIdState.value = newTab.id
+                        currentUrlState.value = "navieer://home"
+                        currentTitleState.value = newTab.title
+                    },
+                    onCloseAll = { isIncognito ->
+                        tabs.removeAll { it.isIncognito == isIncognito }
+                        if (tabs.isEmpty()) {
+                            val fresh = BrowserTab(url = "navieer://home", title = "Nova Aba")
+                            tabs.add(fresh)
+                            activeTabIdState.value = fresh.id
+                            currentUrlState.value = "navieer://home"
+                        } else {
+                            activeTabIdState.value = tabs.first().id
+                            currentUrlState.value = tabs.first().url
                         }
-                    )
-                }
+                    },
+                    onDismiss = { showTabsSheet = false }
+                )
+            }
 
-                // Settings Dialog
-                if (showSettingsDialog) {
-                    val prefs = PreferenceManager.getDefaultSharedPreferences(applicationContext)
-                    var experimental by remember { mutableStateOf(prefs.getBoolean("experimental_mode", false)) }
+            // History Sheet
+            if (showHistorySheet) {
+                HistorySheet(
+                    historyList = historyList,
+                    onSelectUrl = { url ->
+                        navigateTo(url, currentSearchEngine, customSearchUrl)
+                    },
+                    onClearHistory = { historyList.clear() },
+                    onDismiss = { showHistorySheet = false }
+                )
+            }
 
-                    AlertDialog(
-                        onDismissRequest = { showSettingsDialog = false },
-                        title = { Text("Configurações Navieer") },
-                        text = {
-                            Column {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text("Modo Experimental Servo", fontWeight = FontWeight.Medium)
-                                        Text("Ativa flags e renderização experimental", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-                                    Switch(
-                                        checked = experimental,
-                                        onCheckedChange = {
-                                            experimental = it
-                                            prefs.edit().putBoolean("experimental_mode", it).apply()
-                                            servoView.setExperimentalMode(it)
-                                        }
-                                    )
-                                }
+            // Bookmarks Sheet
+            if (showBookmarksSheet) {
+                BookmarksSheet(
+                    bookmarks = bookmarkList,
+                    onSelectUrl = { url ->
+                        navigateTo(url, currentSearchEngine, customSearchUrl)
+                    },
+                    onDeleteBookmark = { bookmarkList.remove(it) },
+                    onDismiss = { showBookmarksSheet = false }
+                )
+            }
 
-                                Spacer(Modifier.height(16.dp))
-                                HorizontalDivider()
-                                Spacer(Modifier.height(16.dp))
+            // Downloads Sheet
+            if (showDownloadsSheet) {
+                DownloadsSheet(
+                    downloads = downloadList,
+                    onCancelDownload = { downloadList.remove(it) },
+                    onClearCompleted = { downloadList.removeAll { it.isCompleted } },
+                    onDismiss = { showDownloadsSheet = false }
+                )
+            }
 
-                                Text("Sobre o Motor Servo", fontWeight = FontWeight.SemiBold)
-                                Spacer(Modifier.height(4.dp))
-                                Text(
-                                    "Navieer utiliza o motor Servo (escrito em Rust com SpiderMonkey para JS, sem Chromium/Gecko) para máximo desempenho e segurança de memória.",
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        },
-                        confirmButton = {
-                            TextButton(onClick = { showSettingsDialog = false }) {
-                                Text("OK")
-                            }
+            // Flags Sheet (navieer://flags)
+            if (showFlagsSheet) {
+                FlagsSheet(
+                    isExperimentalServo = isExperimentalServo,
+                    isWebGpu = isWebGpu,
+                    isForceDark = isForceDark,
+                    onToggleExperimentalServo = { enabled ->
+                        lifecycleScope.launch {
+                            browserPreferences.setServoExperimental(enabled)
+                            servoView.setExperimentalMode(enabled)
                         }
-                    )
-                }
+                    },
+                    onToggleWebGpu = { enabled ->
+                        lifecycleScope.launch { browserPreferences.setServoWebGpu(enabled) }
+                    },
+                    onToggleForceDark = { enabled ->
+                        lifecycleScope.launch { browserPreferences.setForceDarkMode(enabled) }
+                    },
+                    onDismiss = { showFlagsSheet = false }
+                )
+            }
+
+            // Settings Sheet
+            if (showSettingsSheet) {
+                SettingsSheet(
+                    currentSearchEngine = currentSearchEngine,
+                    customSearchUrl = customSearchUrl,
+                    isAmoledMode = isAmoledMode,
+                    isAdBlockEnabled = isAdBlockEnabled,
+                    onSelectSearchEngine = { engine ->
+                        lifecycleScope.launch { browserPreferences.setSearchEngine(engine) }
+                    },
+                    onUpdateCustomSearchUrl = { url ->
+                        lifecycleScope.launch { browserPreferences.setCustomSearchUrl(url) }
+                    },
+                    onToggleAmoled = { enabled ->
+                        lifecycleScope.launch { browserPreferences.setAmoledMode(enabled) }
+                    },
+                    onToggleAdBlock = { enabled ->
+                        lifecycleScope.launch { browserPreferences.setAdBlockEnabled(enabled) }
+                    },
+                    onDismiss = { showSettingsSheet = false }
+                )
             }
         }
     }
 
-    // Servo.Client Callbacks (v0.5.0 API)
+    // Servo.Client Callbacks (Servo Engine Native Events)
     override fun onAlert(message: String) {
         alertMessageState.value = message
     }
@@ -635,18 +489,24 @@ class MainActivity : ComponentActivity(), Servo.Client {
     override fun onLoadStarted() {
         Log.i("Navieer", "onLoadStarted")
         isLoadingState.value = true
+        isOmniboxVisibleState.value = true
     }
 
     override fun onLoadEnded() {
         Log.i("Navieer", "onLoadEnded: ${currentUrlState.value}")
         isLoadingState.value = false
-        if (currentUrlState.value.isNotEmpty()) {
-            historyList.add(
-                HistoryItem(
-                    title = currentTitleState.value.ifEmpty { currentUrlState.value },
-                    url = currentUrlState.value
+
+        if (currentUrlState.value.isNotEmpty() && currentUrlState.value != "navieer://home") {
+            val activeTab = tabs.find { it.id == activeTabIdState.value }
+            // Only add to history if not in incognito mode
+            if (activeTab?.isIncognito != true) {
+                historyList.add(
+                    HistoryItem(
+                        title = currentTitleState.value.ifEmpty { currentUrlState.value },
+                        url = currentUrlState.value
+                    )
                 )
-            )
+            }
         }
     }
 
@@ -668,7 +528,7 @@ class MainActivity : ComponentActivity(), Servo.Client {
     }
 
     override fun onRedrawing(redrawing: Boolean) {
-        // Redrawing callback from Servo
+        // Redrawing callback from Servo engine
     }
 
     override fun onImeShow() {
