@@ -44,7 +44,12 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build Navieer Release APK with Gradle
-        run: ./gradlew assembleRelease --stacktrace
+        run: |
+          ./gradlew assembleRelease --stacktrace > build.log 2>&1 || {
+            echo "==== GRADLE BUILD LOG (TAIL 300 LINES) ===="
+            tail -n 300 build.log
+            exit 1
+          }
 
       - name: Prepare APK Artifact
         run: |
