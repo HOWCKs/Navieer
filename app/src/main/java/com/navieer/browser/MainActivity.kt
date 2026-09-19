@@ -13,7 +13,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -32,6 +31,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.getSystemService
 import androidx.preference.PreferenceManager
 import com.navieer.browser.model.BookmarkItem
@@ -39,12 +39,13 @@ import com.navieer.browser.model.BrowserTab
 import com.navieer.browser.model.HistoryItem
 import com.navieer.browser.ui.theme.NavieerTheme
 import org.servo.servoview.Servo
-import org.servo.servoview.ServoNavigator
 import org.servo.servoview.ServoView
 
 class MainActivity : ComponentActivity(), Servo.Client {
     private lateinit var servoView: ServoView
-    private val navigator = ServoNavigator()
+
+    private val canGoBackState = mutableStateOf(false)
+    private val canGoForwardState = mutableStateOf(false)
 
     private val currentUrlState = mutableStateOf("https://servo.org")
     private val currentTitleState = mutableStateOf("Servo - Web Engine")
@@ -73,21 +74,35 @@ class MainActivity : ComponentActivity(), Servo.Client {
         tabs.add(firstTab)
         activeTabIdState.value = firstTab.id
 
-        servoView = ServoView(
-            context = this,
-            client = this,
-            servoArgs = intent.getStringExtra("servoargs"),
-            servoLog = intent.getStringExtra("servolog"),
-            experimentalMode = experimentalMode,
-            initialUri = initialUrl,
-            navigator = navigator,
-        )
+        // Initialize ServoView with v0.5.0 API
+        servoView = ServoView(this).apply {
+            setClient(this@MainActivity)
+            setServoArgs(
+                intent.getStringExtra("servoargs"),
+                intent.getStringExtra("servolog"),
+                experimentalMode
+            )
+            loadUri(initialUrl)
+        }
 
         setContent {
             NavieerTheme {
                 MainBrowserScreen()
             }
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        servoView.onPause()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val prefs = PreferenceManager.getDefaultSharedPreferences(applicationContext)
+        val experimentalMode = prefs.getBoolean("experimental_mode", false)
+        servoView.setExperimentalMode(experimentalMode)
+        servoView.onResume()
     }
 
     private fun navigateTo(input: String) {
@@ -121,7 +136,7 @@ class MainActivity : ComponentActivity(), Servo.Client {
             urlInput = currentUrlState.value
         }
 
-        BackHandler(enabled = navigator.canGoBackState.value) {
+        BackHandler(enabled = canGoBackState.value) {
             servoView.goBack()
         }
 
@@ -142,26 +157,26 @@ class MainActivity : ComponentActivity(), Servo.Client {
                         // Back Button
                         IconButton(
                             onClick = { servoView.goBack() },
-                            enabled = navigator.canGoBackState.value,
+                            enabled = canGoBackState.value,
                             modifier = Modifier.size(36.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.ArrowBack,
                                 contentDescription = "Voltar",
-                                tint = if (navigator.canGoBackState.value) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                tint = if (canGoBackState.value) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                             )
                         }
 
                         // Forward Button
                         IconButton(
                             onClick = { servoView.goForward() },
-                            enabled = navigator.canGoForwardState.value,
+                            enabled = canGoForwardState.value,
                             modifier = Modifier.size(36.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.ArrowForward,
                                 contentDescription = "Avançar",
-                                tint = if (navigator.canGoForwardState.value) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                tint = if (canGoForwardState.value) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                             )
                         }
 
@@ -332,9 +347,9 @@ class MainActivity : ComponentActivity(), Servo.Client {
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-                // Servo native SurfaceView rendering container
-                Servo(
-                    servoView = servoView,
+                // Servo native SurfaceView rendering container via AndroidView
+                AndroidView(
+                    factory = { servoView },
                     modifier = Modifier.fillMaxSize()
                 )
 
@@ -612,7 +627,7 @@ class MainActivity : ComponentActivity(), Servo.Client {
         }
     }
 
-    // Servo.Client Callbacks
+    // Servo.Client Callbacks (v0.5.0 API)
     override fun onAlert(message: String) {
         alertMessageState.value = message
     }
@@ -645,6 +660,15 @@ class MainActivity : ComponentActivity(), Servo.Client {
         currentUrlState.value = url
         val activeTab = tabs.find { it.id == activeTabIdState.value }
         activeTab?.url = url
+    }
+
+    override fun onHistoryChanged(canGoBack: Boolean, canGoForward: Boolean) {
+        canGoBackState.value = canGoBack
+        canGoForwardState.value = canGoForward
+    }
+
+    override fun onRedrawing(redrawing: Boolean) {
+        // Redrawing callback from Servo
     }
 
     override fun onImeShow() {
