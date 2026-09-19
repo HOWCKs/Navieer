@@ -7,6 +7,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: write
+  issues: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -45,11 +49,15 @@ jobs:
 
       - name: Build Navieer Release APK with Gradle
         run: |
-          ./gradlew assembleRelease --stacktrace > build.log 2>&1 || {
-            echo "==== GRADLE BUILD LOG (TAIL 300 LINES) ===="
-            tail -n 300 build.log
-            exit 1
-          }
+          ./gradlew assembleRelease --stacktrace > build.log 2>&1
+
+      - name: Report Build Failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tail -n 150 build.log > failure_tail.txt
+          gh issue create --title "Build Failure Log" --body-file failure_tail.txt || true
 
       - name: Prepare APK Artifact
         run: |
