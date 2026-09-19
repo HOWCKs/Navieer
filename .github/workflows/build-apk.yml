@@ -7,10 +7,6 @@ on:
   pull_request:
   workflow_dispatch:
 
-permissions:
-  contents: write
-  issues: write
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -41,7 +37,7 @@ jobs:
           mkdir -p app/libs
           echo "Downloading official Servo Android AAR (ARM64)..."
           curl -fL --retry 5 --retry-delay 3 -o app/libs/servo-aarch64-android.aar "https://github.com/servo/servo/releases/download/v0.5.0/servo-aarch64-android.aar"
-          echo "Patching minCompileSdk in AAR metadata..."
+          echo "Patching minCompileSdk in AAR metadata for compatibility..."
           cd app/libs
           unzip -q servo-aarch64-android.aar -d aar_extracted
           if [ -f aar_extracted/META-INF/com/android/build/gradle/aar-metadata.properties ]; then
@@ -59,19 +55,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build Navieer Release APK with Gradle
-        run: |
-          ./gradlew assembleRelease --stacktrace > build.log 2>&1
-
-      - name: Report Build Failure
-        if: failure()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          grep -E "(e: |error:|CompilationErrorException)" build.log -C 3 > failure_tail.txt || true
-          if [ ! -s failure_tail.txt ]; then
-            tail -n 150 build.log > failure_tail.txt
-          fi
-          gh issue create --title "Kotlin Compiler Errors" --body-file failure_tail.txt || true
+        run: ./gradlew assembleRelease --stacktrace
 
       - name: Prepare APK Artifact
         run: |
