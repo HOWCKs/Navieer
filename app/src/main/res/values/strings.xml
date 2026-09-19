@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">Navieer</string>
+    <string name="search_or_enter_url">Pesquisar ou digitar URL</string>
+    <string name="home">Início</string>
+    <string name="back">Voltar</string>
+    <string name="forward">Avançar</string>
+    <string name="reload">Recarregar</string>
+    <string name="stop">Parar</string>
+    <string name="tabs">Abas</string>
+    <string name="bookmarks">Favoritos</string>
+    <string name="history">Histórico</string>
+    <string name="settings">Configurações</string>
+    <string name="new_tab">Nova aba</string>
+    <string name="close_tab">Fechar aba</string>
+    <string name="close_all_tabs">Fechar todas as abas</string>
+    <string name="experimental_mode">Modo Experimental Servo</string>
+    <string name="engine_version">Versão da Engine</string>
+    <string name="default_search_engine">Buscador Padrão</string>
+    <string name="privacy_and_security">Privacidade e Segurança</string>
+    <string name="about_navieer">Sobre o Navieer</string>
+    <string name="clear_history">Limpar histórico</string>
+    <string name="no_history">Nenhum histórico recente</string>
+    <string name="no_bookmarks">Nenhum favorito salvo</string>
+</resources>
