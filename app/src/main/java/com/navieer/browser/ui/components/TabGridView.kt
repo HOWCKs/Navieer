@@ -43,8 +43,16 @@ fun TabGridView(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = MaterialTheme.colorScheme.surface,
-        dragHandle = { BottomSheetDefaults.DragHandle() }
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        dragHandle = {
+            BottomSheetDefaults.DragHandle(
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                width = 48.dp,
+                height = 5.dp,
+                shape = RoundedCornerShape(10.dp)
+            )
+        }
     ) {
         Column(
             modifier = Modifier
@@ -86,7 +94,8 @@ fun TabGridView(
 
                 IconButton(
                     onClick = { onCloseAll(isPrivateSection) },
-                    enabled = filteredTabs.isNotEmpty()
+                    enabled = filteredTabs.isNotEmpty(),
+                    modifier = Modifier.clip(CircleShape)
                 ) {
                     Icon(
                         imageVector = Icons.Default.DeleteSweep,
@@ -108,12 +117,12 @@ fun TabGridView(
                         Icon(
                             imageVector = if (isPrivateSection) Icons.Outlined.Shield else Icons.Default.Tab,
                             contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            modifier = Modifier.size(56.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                         )
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(12.dp))
                         Text(
-                            text = if (isPrivateSection) "Nenhuma aba anônima aberta" else "Nenhuma aba normal aberta",
+                            text = if (isPrivateSection) "Nenhuma aba privativa aberta" else "Nenhuma aba normal aberta",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 14.sp
                         )
@@ -133,14 +142,15 @@ fun TabGridView(
                         val isSelected = tab.id == activeTabId
 
                         Card(
+                            shape = RoundedCornerShape(22.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(160.dp)
-                                .clip(RoundedCornerShape(16.dp))
+                                .height(164.dp)
+                                .clip(RoundedCornerShape(22.dp))
                                 .border(
-                                    width = if (isSelected) 2.dp else 1.dp,
-                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
-                                    shape = RoundedCornerShape(16.dp)
+                                    width = if (isSelected) 2.5.dp else 1.dp,
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                                    shape = RoundedCornerShape(22.dp)
                                 )
                                 .clickable {
                                     onTabSelected(tab)
@@ -155,7 +165,7 @@ fun TabGridView(
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                                        .padding(start = 12.dp, end = 6.dp, top = 8.dp, bottom = 4.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
@@ -169,12 +179,14 @@ fun TabGridView(
                                     )
                                     IconButton(
                                         onClick = { onTabClosed(tab) },
-                                        modifier = Modifier.size(20.dp)
+                                        modifier = Modifier
+                                            .size(26.dp)
+                                            .clip(CircleShape)
                                     ) {
                                         Icon(
                                             Icons.Default.Close,
                                             contentDescription = "Fechar aba",
-                                            modifier = Modifier.size(14.dp)
+                                            modifier = Modifier.size(15.dp)
                                         )
                                     }
                                 }
@@ -184,11 +196,11 @@ fun TabGridView(
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .padding(start = 8.dp, end = 8.dp, bottom = 8.dp)
-                                        .clip(RoundedCornerShape(12.dp))
+                                        .clip(RoundedCornerShape(16.dp))
                                         .background(
                                             Brush.verticalGradient(
                                                 listOf(
-                                                    MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f),
+                                                    MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.7f),
                                                     Color(tab.previewColor).copy(alpha = 0.2f)
                                                 )
                                             )
@@ -199,14 +211,16 @@ fun TabGridView(
                                         horizontalAlignment = Alignment.CenterHorizontally,
                                         modifier = Modifier.padding(8.dp)
                                     ) {
-                                        Text(
-                                            text = if (tab.isIncognito) "🕶️" else "🌐",
-                                            fontSize = 24.sp
+                                        Icon(
+                                            imageVector = if (tab.isIncognito) Icons.Outlined.Shield else Icons.Default.Public,
+                                            contentDescription = null,
+                                            tint = if (tab.isIncognito) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(28.dp)
                                         )
-                                        Spacer(Modifier.height(4.dp))
+                                        Spacer(Modifier.height(6.dp))
                                         Text(
                                             text = tab.url.removePrefix("https://").removePrefix("http://"),
-                                            fontSize = 10.sp,
+                                            fontSize = 11.sp,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             maxLines = 2,
                                             overflow = TextOverflow.Ellipsis

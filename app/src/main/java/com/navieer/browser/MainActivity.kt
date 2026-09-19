@@ -10,7 +10,6 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -21,9 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.getSystemService
@@ -31,6 +27,7 @@ import androidx.lifecycle.lifecycleScope
 import com.navieer.browser.data.AdBlockRules
 import com.navieer.browser.data.BrowserPreferences
 import com.navieer.browser.data.SearchEngine
+import com.navieer.browser.data.SmartSuggestions
 import com.navieer.browser.model.BookmarkItem
 import com.navieer.browser.model.BrowserTab
 import com.navieer.browser.model.DownloadItem
@@ -54,9 +51,8 @@ class MainActivity : ComponentActivity(), Servo.Client {
     private val alertMessageState = mutableStateOf<String?>(null)
     private val dynamicSiteColorState = mutableStateOf<Color?>(null)
 
-    // User Gesture States: Collapsing Toolbar and Edge Navigation Feedback
+    // User Gesture States: Omnibox Visibility
     private val isOmniboxVisibleState = mutableStateOf(true)
-    private val edgeSwipeFeedbackState = mutableStateOf<String?>(null)
 
     // Tab Management
     private val tabs = mutableStateListOf<BrowserTab>()
@@ -188,10 +184,23 @@ class MainActivity : ComponentActivity(), Servo.Client {
         var showDownloadsSheet by remember { mutableStateOf(false) }
         var showSettingsSheet by remember { mutableStateOf(false) }
         var showFlagsSheet by remember { mutableStateOf(false) }
+        var showSiteInfoSheet by remember { mutableStateOf(false) }
         var isReaderModeActive by remember { mutableStateOf(false) }
 
-        val screenWidthPx = with(LocalDensity.current) { LocalConfiguration.current.screenWidthDp.dp.toPx() }
+        // Smart suggestions state
+        var omniboxTypedQuery by remember { mutableStateOf("") }
+        val suggestions = remember(omniboxTypedQuery, historyList.size, bookmarkList.size, currentSearchEngine) {
+            if (omniboxTypedQuery.isBlank()) emptyList()
+            else SmartSuggestions.getSuggestions(
+                query = omniboxTypedQuery,
+                history = historyList,
+                bookmarks = bookmarkList,
+                searchEngineName = currentSearchEngine.title,
+                searchEngineUrlTemplate = if (currentSearchEngine == SearchEngine.CUSTOM) customSearchUrl else currentSearchEngine.searchUrl
+            )
+        }
 
+        // Back Handler (allows native Android gesture back without consuming webview touches)
         BackHandler(enabled = canGoBackState.value && currentUrlState.value != "navieer://home") {
             servoView.goBack()
         }
@@ -200,39 +209,8 @@ class MainActivity : ComponentActivity(), Servo.Client {
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
-                // Edge Swipe Detection (Back / Forward Gestures) and Collapsing Scroll Detection
-                .pointerInput(Unit) {
-                    detectDragGestures(
-                        onDragEnd = {
-                            edgeSwipeFeedbackState.value = null
-                        },
-                        onDragCancel = {
-                            edgeSwipeFeedbackState.value = null
-                        },
-                        onDrag = { change, dragAmount ->
-                            change.consume()
-
-                            // Vertical drag: Collapsing and expanding toolbar
-                            if (dragAmount.y < -15f) {
-                                isOmniboxVisibleState.value = false // Scroll down -> Hide Omnibox
-                            } else if (dragAmount.y > 15f) {
-                                isOmniboxVisibleState.value = true // Scroll up -> Show Omnibox
-                            }
-
-                            // Edge Gestures for Navigation
-                            val touchX = change.position.x
-                            if (touchX < 80f && dragAmount.x > 25f && canGoBackState.value) {
-                                edgeSwipeFeedbackState.value = "Voltar"
-                                servoView.goBack()
-                            } else if (touchX > screenWidthPx - 80f && dragAmount.x < -25f && canGoForwardState.value) {
-                                edgeSwipeFeedbackState.value = "Avançar"
-                                servoView.goForward()
-                            }
-                        }
-                    )
-                }
         ) {
-            // Main Web View or Start Page
+            // Main Web View or Start Page (Native ServoView receives unhindered touch events for scrolling)
             if (currentUrlState.value == "navieer://home") {
                 SpeedDialView(
                     onNavigate = { url ->
@@ -247,7 +225,7 @@ class MainActivity : ComponentActivity(), Servo.Client {
                 )
             }
 
-            // Floating Dynamic Collapsing Omnibox (Material 3 Expressive)
+            // Floating Dynamic Omnibox (Material 3 Expressive)
             OmniboxFloatingBar(
                 url = if (currentUrlState.value == "navieer://home") "" else currentUrlState.value,
                 isLoading = isLoadingState.value,
@@ -255,7 +233,10 @@ class MainActivity : ComponentActivity(), Servo.Client {
                 isDesktopMode = isDesktopMode,
                 isAdBlockActive = isAdBlockEnabled,
                 isVisible = isOmniboxVisibleState.value,
+                suggestions = suggestions,
+                onQueryChanged = { query -> omniboxTypedQuery = query },
                 onNavigate = { input ->
+                    omniboxTypedQuery = ""
                     navigateTo(input, currentSearchEngine, customSearchUrl)
                 },
                 onReload = { servoView.reload() },
@@ -270,6 +251,9 @@ class MainActivity : ComponentActivity(), Servo.Client {
                 },
                 onToggleReaderMode = {
                     isReaderModeActive = !isReaderModeActive
+                },
+                onOpenSiteInfo = {
+                    showSiteInfoSheet = true
                 },
                 onOpenTabs = { showTabsSheet = true },
                 onOpenHistory = { showHistorySheet = true },
@@ -291,28 +275,19 @@ class MainActivity : ComponentActivity(), Servo.Client {
                     .statusBarsPadding()
             )
 
-            // Visual Edge-Swipe Feedback Indicator
-            edgeSwipeFeedbackState.value?.let { gestureText ->
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .clip(CircleShape),
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
-                    tonalElevation = 6.dp
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = if (gestureText == "Voltar") Icons.Default.ArrowBack else Icons.Default.ArrowForward,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(gestureText, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                    }
-                }
+            // Site Security & Permissions Modal Sheet
+            if (showSiteInfoSheet) {
+                SiteInfoSheet(
+                    url = currentUrlState.value,
+                    title = currentTitleState.value,
+                    onEditUrl = { url ->
+                        omniboxTypedQuery = url
+                    },
+                    onClearSiteData = { host ->
+                        Toast.makeText(this@MainActivity, "Cookies e dados locais de $host limpos", Toast.LENGTH_SHORT).show()
+                    },
+                    onDismiss = { showSiteInfoSheet = false }
+                )
             }
 
             // Reader Mode Overlay
@@ -329,10 +304,15 @@ class MainActivity : ComponentActivity(), Servo.Client {
             alertMessageState.value?.let { alertMessage ->
                 AlertDialog(
                     onDismissRequest = { alertMessageState.value = null },
-                    title = { Text("Mensagem da Página") },
+                    shape = RoundedCornerShape(28.dp),
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    title = { Text("Mensagem da Página", fontWeight = FontWeight.Bold) },
                     text = { Text(alertMessage) },
                     confirmButton = {
-                        TextButton(onClick = { alertMessageState.value = null }) {
+                        TextButton(
+                            onClick = { alertMessageState.value = null },
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
                             Text("OK")
                         }
                     }

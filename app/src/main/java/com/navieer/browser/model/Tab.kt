@@ -1,5 +1,6 @@
 package com.navieer.browser.model
 
+import androidx.compose.ui.graphics.vector.ImageVector
 import java.util.UUID
 
 data class BrowserTab(
@@ -29,7 +30,7 @@ data class SpeedDialItem(
     val id: String = UUID.randomUUID().toString(),
     val title: String,
     val url: String,
-    val iconEmoji: String = "🌐"
+    val iconName: String = "language"
 )
 
 data class DownloadItem(
@@ -40,4 +41,13 @@ data class DownloadItem(
     val progress: Float = 1.0f,
     val isCompleted: Boolean = true,
     val timestamp: Long = System.currentTimeMillis()
+)
+
+data class SitePermission(
+    val host: String,
+    val locationAllowed: Boolean = false,
+    val cameraAllowed: Boolean = false,
+    val micAllowed: Boolean = false,
+    val notificationsAllowed: Boolean = false,
+    val adBlockEnabled: Boolean = true
 )

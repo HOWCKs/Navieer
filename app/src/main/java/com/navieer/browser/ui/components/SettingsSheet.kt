@@ -3,6 +3,7 @@ package com.navieer.browser.ui.components
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -11,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,7 +39,16 @@ fun SettingsSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = MaterialTheme.colorScheme.surface
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        dragHandle = {
+            BottomSheetDefaults.DragHandle(
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                width = 48.dp,
+                height = 5.dp,
+                shape = RoundedCornerShape(10.dp)
+            )
+        }
     ) {
         Column(
             modifier = Modifier
@@ -59,21 +70,33 @@ fun SettingsSheet(
                 fontWeight = FontWeight.SemiBold
             )
 
-            ListItem(
-                headlineContent = { Text(currentSearchEngine.title, fontWeight = FontWeight.Medium) },
-                supportingContent = {
-                    Text(
-                        if (currentSearchEngine == SearchEngine.CUSTOM) customUrlInput else currentSearchEngine.searchUrl,
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                },
-                leadingContent = { Icon(Icons.Default.Search, null, tint = MaterialTheme.colorScheme.primary) },
-                trailingContent = { Icon(Icons.Default.ChevronRight, null) },
-                modifier = Modifier.clickable { showSearchEngineDialog = true }
-            )
+            Spacer(Modifier.height(8.dp))
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .clickable { showSearchEngineDialog = true },
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHighest
+            ) {
+                ListItem(
+                    headlineContent = { Text(currentSearchEngine.title, fontWeight = FontWeight.Medium) },
+                    supportingContent = {
+                        Text(
+                            if (currentSearchEngine == SearchEngine.CUSTOM) customUrlInput else currentSearchEngine.searchUrl,
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    leadingContent = { Icon(Icons.Default.Search, null, tint = MaterialTheme.colorScheme.primary) },
+                    trailingContent = { Icon(Icons.Default.ChevronRight, null) },
+                    colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
+                )
+            }
 
             if (currentSearchEngine == SearchEngine.CUSTOM) {
+                Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
                     value = customUrlInput,
                     onValueChange = {
@@ -83,14 +106,12 @@ fun SettingsSheet(
                     label = { Text("URL de Busca (use %s para termo)") },
                     placeholder = { Text("https://exemplo.com/busca?q=%s") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    shape = RoundedCornerShape(12.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp)
                 )
             }
 
-            Spacer(Modifier.height(16.dp))
-            HorizontalDivider()
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(20.dp))
 
             // Seção 2: Aparência e Design System
             Text(
@@ -100,21 +121,29 @@ fun SettingsSheet(
                 fontWeight = FontWeight.SemiBold
             )
 
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Spacer(Modifier.height(8.dp))
+
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                    Text("Dark Mode AMOLED Puro (#000000)", fontWeight = FontWeight.Medium)
-                    Text("Preto absoluto para máxima economia de energia em telas OLED/AMOLED.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                        Text("Dark Mode AMOLED Puro (#000000)", fontWeight = FontWeight.Medium)
+                        Text("Preto absoluto para máxima economia de energia em telas OLED/AMOLED.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Switch(checked = isAmoledMode, onCheckedChange = onToggleAmoled)
                 }
-                Switch(checked = isAmoledMode, onCheckedChange = onToggleAmoled)
             }
 
-            Spacer(Modifier.height(8.dp))
-            HorizontalDivider()
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(20.dp))
 
             // Seção 3: Privacidade e Segurança
             Text(
@@ -124,21 +153,29 @@ fun SettingsSheet(
                 fontWeight = FontWeight.SemiBold
             )
 
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Spacer(Modifier.height(8.dp))
+
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                    Text("Bloqueador de Anúncios e Rastreadores", fontWeight = FontWeight.Medium)
-                    Text("Proteção nativa contra scripts de rastreamento, banners invasivos e telemetria.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                        Text("Bloqueador de Anúncios e Rastreadores", fontWeight = FontWeight.Medium)
+                        Text("Proteção nativa contra scripts de rastreamento, banners invasivos e telemetria.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Switch(checked = isAdBlockEnabled, onCheckedChange = onToggleAdBlock)
                 }
-                Switch(checked = isAdBlockEnabled, onCheckedChange = onToggleAdBlock)
             }
 
-            Spacer(Modifier.height(8.dp))
-            HorizontalDivider()
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(20.dp))
 
             // Seção 4: Sobre o Navieer e Servo Engine
             Text(
@@ -148,10 +185,12 @@ fun SettingsSheet(
                 fontWeight = FontWeight.SemiBold
             )
 
+            Spacer(Modifier.height(8.dp))
+
             Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Navieer Browser v1.0.0", fontWeight = FontWeight.Bold, fontSize = 14.sp)
@@ -159,7 +198,7 @@ fun SettingsSheet(
                     Text(
                         "Motor de renderização: Servo (Rust + Mozilla SpiderMonkey)\n" +
                         "100% livre de Chromium (Blink/V8) e Gecko.\n" +
-                        "Renderização via EGL / OpenGL ES 3.0 acelerada por GPU.",
+                        "Renderização via EGL / OpenGL ES 3.0 acelerada por hardware.",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -173,32 +212,42 @@ fun SettingsSheet(
         if (showSearchEngineDialog) {
             AlertDialog(
                 onDismissRequest = { showSearchEngineDialog = false },
-                title = { Text("Escolha o Buscador Padrão") },
+                shape = RoundedCornerShape(28.dp),
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                title = { Text("Escolha o Buscador Padrão", fontWeight = FontWeight.Bold) },
                 text = {
-                    Column {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         SearchEngine.entries.forEach { engine ->
-                            Row(
+                            Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .clip(RoundedCornerShape(16.dp))
                                     .clickable {
                                         onSelectSearchEngine(engine)
                                         showSearchEngineDialog = false
-                                    }
-                                    .padding(vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                    },
+                                shape = RoundedCornerShape(16.dp),
+                                color = androidx.compose.ui.graphics.Color.Transparent
                             ) {
-                                RadioButton(
-                                    selected = currentSearchEngine == engine,
-                                    onClick = {
-                                        onSelectSearchEngine(engine)
-                                        showSearchEngineDialog = false
-                                    }
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Column {
-                                    Text(engine.title, fontWeight = FontWeight.Medium)
-                                    if (engine.searchUrl.isNotEmpty()) {
-                                        Text(engine.searchUrl, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 8.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(
+                                        selected = currentSearchEngine == engine,
+                                        onClick = {
+                                            onSelectSearchEngine(engine)
+                                            showSearchEngineDialog = false
+                                        }
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Column {
+                                        Text(engine.title, fontWeight = FontWeight.Medium)
+                                        if (engine.searchUrl.isNotEmpty()) {
+                                            Text(engine.searchUrl, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
                                     }
                                 }
                             }
@@ -206,7 +255,10 @@ fun SettingsSheet(
                     }
                 },
                 confirmButton = {
-                    TextButton(onClick = { showSearchEngineDialog = false }) {
+                    TextButton(
+                        onClick = { showSearchEngineDialog = false },
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
                         Text("Fechar")
                     }
                 }

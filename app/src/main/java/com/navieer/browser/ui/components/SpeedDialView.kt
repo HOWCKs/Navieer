@@ -17,7 +17,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -34,12 +36,12 @@ fun SpeedDialView(
 
     val defaultItems = remember {
         mutableStateListOf(
-            SpeedDialItem(title = "Servo", url = "https://servo.org", iconEmoji = "⚙️"),
-            SpeedDialItem(title = "Rust", url = "https://www.rust-lang.org", iconEmoji = "🦀"),
-            SpeedDialItem(title = "GitHub", url = "https://github.com", iconEmoji = "🐙"),
-            SpeedDialItem(title = "Wikipedia", url = "https://www.wikipedia.org", iconEmoji = "📚"),
-            SpeedDialItem(title = "DuckDuckGo", url = "https://duckduckgo.com", iconEmoji = "🦆"),
-            SpeedDialItem(title = "Hacker News", url = "https://news.ycombinator.com", iconEmoji = "📰")
+            SpeedDialItem(title = "Servo", url = "https://servo.org", iconName = "servo"),
+            SpeedDialItem(title = "Rust", url = "https://www.rust-lang.org", iconName = "rust"),
+            SpeedDialItem(title = "GitHub", url = "https://github.com", iconName = "github"),
+            SpeedDialItem(title = "Wikipedia", url = "https://www.wikipedia.org", iconName = "wikipedia"),
+            SpeedDialItem(title = "DuckDuckGo", url = "https://duckduckgo.com", iconName = "duckduckgo"),
+            SpeedDialItem(title = "Hacker News", url = "https://news.ycombinator.com", iconName = "news")
         )
     }
 
@@ -56,7 +58,7 @@ fun SpeedDialView(
         // Minimalist Navieer Compass Logo
         Box(
             modifier = Modifier
-                .size(72.dp)
+                .size(76.dp)
                 .clip(CircleShape)
                 .background(
                     Brush.linearGradient(
@@ -72,7 +74,7 @@ fun SpeedDialView(
                 imageVector = Icons.Default.Explore,
                 contentDescription = "Navieer Logo",
                 tint = Color.White,
-                modifier = Modifier.size(40.dp)
+                modifier = Modifier.size(42.dp)
             )
         }
 
@@ -84,33 +86,36 @@ fun SpeedDialView(
             color = MaterialTheme.colorScheme.onBackground
         )
 
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(6.dp))
 
-        // Servo Engine Badge Chip
+        // Servo Engine Badge Chip with rounded pill
         SuggestionChip(
             onClick = { onNavigate("https://servo.org") },
             label = {
                 Text(
-                    text = "Servo Web Engine • Rust",
+                    text = "Servo Web Engine • Rust Parallelism",
                     fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.primary
                 )
             },
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(20.dp),
             colors = SuggestionChipDefaults.suggestionChipColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
             ),
             border = null
         )
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(36.dp))
 
         // Speed Dial Shortcuts Grid
         Text(
             text = "Atalhos Rápidos",
-            style = MaterialTheme.typography.titleSmall,
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
         )
 
         LazyVerticalGrid(
@@ -120,27 +125,37 @@ fun SpeedDialView(
             modifier = Modifier.fillMaxWidth()
         ) {
             items(defaultItems) { item ->
+                val icon = getSpeedDialVector(item.iconName)
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable { onNavigate(item.url) }
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .clickable { onNavigate(item.url) }
+                        .padding(vertical = 4.dp)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(54.dp)
-                            .clip(RoundedCornerShape(16.dp))
+                            .size(56.dp)
+                            .clip(RoundedCornerShape(22.dp))
                             .background(MaterialTheme.colorScheme.surfaceContainerHighest),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(text = item.iconEmoji, fontSize = 24.sp)
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = item.title,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(26.dp)
+                        )
                     }
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(8.dp))
                     Text(
                         text = item.title,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center
                     )
                 }
             }
@@ -148,26 +163,32 @@ fun SpeedDialView(
             item {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable { showAddDialog = true }
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .clickable { showAddDialog = true }
+                        .padding(vertical = 4.dp)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(54.dp)
-                            .clip(RoundedCornerShape(16.dp))
+                            .size(56.dp)
+                            .clip(RoundedCornerShape(22.dp))
                             .background(MaterialTheme.colorScheme.surfaceContainerLow),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "Adicionar Atalho",
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(26.dp)
                         )
                     }
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(8.dp))
                     Text(
                         text = "Adicionar",
                         fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
                     )
                 }
             }
@@ -175,48 +196,75 @@ fun SpeedDialView(
 
         Spacer(Modifier.weight(1.2f))
 
-        // Add Shortcut Dialog
+        // Add Shortcut Dialog with smooth rounded corners
         if (showAddDialog) {
             AlertDialog(
                 onDismissRequest = { showAddDialog = false },
-                title = { Text("Novo Atalho") },
+                shape = RoundedCornerShape(28.dp),
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                title = {
+                    Text(
+                        "Novo Atalho",
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                    )
+                },
                 text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         OutlinedTextField(
                             value = newTitle,
                             onValueChange = { newTitle = it },
-                            label = { Text("Nome") },
-                            singleLine = true
+                            label = { Text("Nome do site") },
+                            shape = RoundedCornerShape(16.dp),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
                             value = newUrl,
                             onValueChange = { newUrl = it },
-                            label = { Text("URL (https://...)") },
-                            singleLine = true
+                            label = { Text("URL (ex: github.com)") },
+                            shape = RoundedCornerShape(16.dp),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
                 },
                 confirmButton = {
-                    TextButton(
+                    Button(
                         onClick = {
                             if (newTitle.isNotBlank() && newUrl.isNotBlank()) {
                                 val finalUrl = if (newUrl.startsWith("http://") || newUrl.startsWith("https://")) newUrl else "https://$newUrl"
-                                defaultItems.add(SpeedDialItem(title = newTitle, url = finalUrl))
+                                defaultItems.add(SpeedDialItem(title = newTitle, url = finalUrl, iconName = "language"))
                                 newTitle = ""
                                 newUrl = ""
                                 showAddDialog = false
                             }
-                        }
+                        },
+                        shape = RoundedCornerShape(20.dp)
                     ) {
                         Text("Salvar")
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showAddDialog = false }) {
+                    TextButton(
+                        onClick = { showAddDialog = false },
+                        shape = RoundedCornerShape(20.dp)
+                    ) {
                         Text("Cancelar")
                     }
                 }
             )
         }
+    }
+}
+
+private fun getSpeedDialVector(iconName: String): ImageVector {
+    return when (iconName.lowercase()) {
+        "servo", "memory" -> Icons.Default.Memory
+        "rust", "code" -> Icons.Default.Code
+        "github", "hub" -> Icons.Default.Hub
+        "wikipedia", "book" -> Icons.Default.MenuBook
+        "duckduckgo", "search" -> Icons.Default.TravelExplore
+        "news", "article" -> Icons.Default.Article
+        else -> Icons.Default.Language
     }
 }
