@@ -384,9 +384,9 @@ private fun PermissionRow(
             thumbContent = if (checked) {
                 {
                     Icon(
-                        imageVector = Icons.Filled.Check,
+                        imageVector = Icons.Default.Check,
                         contentDescription = null,
-                        modifier = Modifier.size(SwitchDefaults.IconSize)
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             } else null
