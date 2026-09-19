@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Article
 import androidx.compose.material.icons.outlined.DesktopWindows
 import androidx.compose.material.icons.outlined.PhoneAndroid
+import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -105,9 +106,9 @@ fun OmniboxFloatingBar(
                         val isHttps = url.startsWith("https://")
                         val isLocal = url.startsWith("navieer://") || url.isEmpty()
                         Icon(
-                            imageVector = if (isLocal) Icons.Default.Explore
+                            imageVector = if (isLocal) Icons.Default.Info
                             else if (isHttps) Icons.Default.Lock
-                            else Icons.Default.LockOpen,
+                            else Icons.Default.Warning,
                             contentDescription = "Informações e Segurança do Site",
                             tint = if (isLocal) MaterialTheme.colorScheme.primary
                             else if (isHttps) Color(0xFF16A34A)
@@ -295,7 +296,7 @@ fun OmniboxFloatingBar(
                             )
                             DropdownMenuItem(
                                 text = { Text("Segurança do Site") },
-                                leadingIcon = { Icon(Icons.Default.Shield, null) },
+                                leadingIcon = { Icon(Icons.Outlined.Shield, null) },
                                 onClick = {
                                     showMenu = false
                                     onOpenSiteInfo()
@@ -357,7 +358,7 @@ fun OmniboxFloatingBar(
                                 "search" -> Icons.Default.Search
                                 "history" -> Icons.Default.History
                                 "bookmark" -> Icons.Default.Bookmark
-                                else -> Icons.Default.Language
+                                else -> Icons.Default.Info
                             }
 
                             Row(
@@ -408,7 +409,7 @@ fun OmniboxFloatingBar(
                                 }
 
                                 Icon(
-                                    imageVector = Icons.Default.NorthWest,
+                                    imageVector = Icons.Default.ArrowForward,
                                     contentDescription = "Preencher",
                                     tint = MaterialTheme.colorScheme.outline,
                                     modifier = Modifier.size(16.dp)

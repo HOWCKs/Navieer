@@ -71,7 +71,7 @@ fun SpeedDialView(
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = Icons.Default.Explore,
+                imageVector = Icons.Default.Home,
                 contentDescription = "Navieer Logo",
                 tint = Color.White,
                 modifier = Modifier.size(42.dp)
@@ -233,7 +233,7 @@ fun SpeedDialView(
                         onClick = {
                             if (newTitle.isNotBlank() && newUrl.isNotBlank()) {
                                 val finalUrl = if (newUrl.startsWith("http://") || newUrl.startsWith("https://")) newUrl else "https://$newUrl"
-                                defaultItems.add(SpeedDialItem(title = newTitle, url = finalUrl, iconName = "language"))
+                                defaultItems.add(SpeedDialItem(title = newTitle, url = finalUrl, iconName = "home"))
                                 newTitle = ""
                                 newUrl = ""
                                 showAddDialog = false
@@ -259,12 +259,12 @@ fun SpeedDialView(
 
 private fun getSpeedDialVector(iconName: String): ImageVector {
     return when (iconName.lowercase()) {
-        "servo", "memory" -> Icons.Default.Memory
-        "rust", "code" -> Icons.Default.Code
-        "github", "hub" -> Icons.Default.Hub
-        "wikipedia", "book" -> Icons.Default.MenuBook
-        "duckduckgo", "search" -> Icons.Default.TravelExplore
-        "news", "article" -> Icons.Default.Article
-        else -> Icons.Default.Language
+        "servo", "memory" -> Icons.Default.Settings
+        "rust", "code" -> Icons.Default.Star
+        "github", "hub" -> Icons.Default.Favorite
+        "wikipedia", "book" -> Icons.Default.Info
+        "duckduckgo", "search" -> Icons.Default.Search
+        "news", "article" -> Icons.Default.List
+        else -> Icons.Default.Home
     }
 }

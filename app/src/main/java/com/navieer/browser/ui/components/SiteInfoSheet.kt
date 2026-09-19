@@ -13,7 +13,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,7 +24,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.navieer.browser.model.SitePermission
 import java.net.URI
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -93,9 +91,9 @@ fun SiteInfoSheet(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = if (isLocal) Icons.Default.Explore
+                        imageVector = if (isLocal) Icons.Default.Info
                         else if (isHttps) Icons.Default.Lock
-                        else Icons.Default.LockOpen,
+                        else Icons.Default.Warning,
                         contentDescription = "Status de Segurança",
                         tint = if (isLocal) MaterialTheme.colorScheme.primary
                         else if (isHttps) Color(0xFF16A34A)
@@ -165,7 +163,7 @@ fun SiteInfoSheet(
                             shape = RoundedCornerShape(16.dp),
                             modifier = Modifier.weight(1f)
                         ) {
-                            Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(6.dp))
                             Text("Copiar", fontSize = 12.sp)
                         }
@@ -219,7 +217,7 @@ fun SiteInfoSheet(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Cookie,
+                            imageVector = Icons.Default.Info,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(22.dp)
@@ -252,7 +250,7 @@ fun SiteInfoSheet(
                         ),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(Icons.Default.DeleteOutline, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(8.dp))
                         Text("Limpar cookies e dados deste site", fontSize = 12.sp)
                     }
@@ -279,7 +277,7 @@ fun SiteInfoSheet(
 
                     // AdBlock Shield for this site
                     PermissionRow(
-                        icon = Icons.Default.Shield,
+                        icon = Icons.Default.Lock,
                         title = "Navieer Shield (Bloqueio de Anúncios)",
                         subtitle = "Bloqueia anúncios e rastreadores invasivos",
                         checked = shieldEnabled,
@@ -307,7 +305,7 @@ fun SiteInfoSheet(
 
                     // Camera
                     PermissionRow(
-                        icon = Icons.Default.CameraAlt,
+                        icon = Icons.Default.CheckCircle,
                         title = "Câmera",
                         subtitle = if (cameraGranted) "Permitido" else "Bloqueado",
                         checked = cameraGranted,
@@ -321,7 +319,7 @@ fun SiteInfoSheet(
 
                     // Microphone
                     PermissionRow(
-                        icon = Icons.Default.Mic,
+                        icon = Icons.Default.Phone,
                         title = "Microfone",
                         subtitle = if (micGranted) "Permitido" else "Bloqueado",
                         checked = micGranted,

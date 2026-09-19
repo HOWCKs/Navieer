@@ -60,7 +60,7 @@ fun BookmarksSheet(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
-                            Icons.Default.BookmarkBorder,
+                            Icons.Default.Bookmark,
                             contentDescription = null,
                             modifier = Modifier.size(56.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
@@ -119,7 +119,7 @@ fun BookmarksSheet(
                                         modifier = Modifier.clip(CircleShape)
                                     ) {
                                         Icon(
-                                            Icons.Default.DeleteOutline,
+                                            Icons.Default.Delete,
                                             contentDescription = "Remover",
                                             tint = MaterialTheme.colorScheme.error,
                                             modifier = Modifier.size(18.dp)

@@ -1,5 +1,6 @@
 package com.navieer.browser.data
 
+import android.net.Uri
 import com.navieer.browser.model.BookmarkItem
 import com.navieer.browser.model.HistoryItem
 
@@ -49,9 +50,9 @@ object SmartSuggestions {
 
         // 1. Direct Search suggestion
         val searchTargetUrl = if (searchEngineUrlTemplate.contains("%s")) {
-            searchEngineUrlTemplate.replace("%s", android.net.Uri.encode(trimmed))
+            searchEngineUrlTemplate.replace("%s", Uri.encode(trimmed))
         } else {
-            "https://duckduckgo.com/?q=${android.net.Uri.encode(trimmed)}"
+            "https://duckduckgo.com/?q=${Uri.encode(trimmed)}"
         }
 
         results.add(

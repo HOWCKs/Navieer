@@ -212,7 +212,7 @@ fun TabGridView(
                                         modifier = Modifier.padding(8.dp)
                                     ) {
                                         Icon(
-                                            imageVector = if (tab.isIncognito) Icons.Outlined.Shield else Icons.Default.Public,
+                                            imageVector = if (tab.isIncognito) Icons.Outlined.Shield else Icons.Default.Info,
                                             contentDescription = null,
                                             tint = if (tab.isIncognito) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.size(28.dp)
