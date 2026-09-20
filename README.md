@@ -1,38 +1,57 @@
-# Navieer 🚀
+# Navieer 🚀⚡
 
-> **Navieer** é um navegador Android moderno de alta performance baseado fielmente nas diretrizes de design do **Material 3 Expressive** e que incorpora nativamente o motor web **Servo** (desenvolvido em Rust com SpiderMonkey JavaScript), eliminando 100% qualquer dependência de Chromium (Blink/V8) e Gecko.
+> **Navieer Cyber Edition** é um navegador Android de alto desempenho com interface moderna e imersiva inspirada no universo **Cyberpunk / Gamer HUD / Esports Dashboards**, incorporando nativamente o motor web de ponta **Servo** (escrito em Rust com SpiderMonkey JavaScript), eliminando 100% qualquer dependência de Chromium (Blink/V8) e Gecko.
 
 [![Build Android APK (Servo)](https://github.com/HOWCKs/Navieer/actions/workflows/build-apk.yml/badge.svg)](https://github.com/HOWCKs/Navieer/actions/workflows/build-apk.yml)
 
 ---
 
-## 🌟 Destaques da Arquitetura e Recursos
+## 🎮 Destaques do Design System Cyber-Gamer HUD
 
-- **Design System Material 3 Expressive Real**:
-  - Aplicação estrita das diretrizes do Material 3 Expressive em toda a interface e experiência do usuário (UI/UX).
-  - Cantos suaves e arredondados (`RoundedCornerShape(20.dp)` a `28.dp` e botões em formato de pílula) sem recortes ou toques com aparência quadrada.
-  - Ícones funcionais e oficiais em vetor Compose (sem emojis como ícones).
-  - Tema AMOLED Dark puro (`#000000`) para máxima economia de energia em telas OLED/AMOLED, além de tema dinâmico e Expressive Light.
+- **Identidade Visual Gamer Sofisticada & Cyber HUD**:
+  - Paleta com fundo profundo de obsidiana (`#0B0E14`), superfícies de painel tecnológico (`#141923`) e tema AMOLED absoluto (`#000000`).
+  - Destaques em neon cibernético: **Electric Cyan** (`#00F0FF`), **Neon Violet** (`#A855F7`), **Matrix Green** (`#22C55E`), **Cyber Amber** (`#F59E0B`) e **Overheat Red** (`#EF4444`).
+  - Bordas com iluminação sutil (glowing borders) e cantos chamfered / squircle arredondados (`RoundedCornerShape` de 12.dp a 24.dp).
+  - Tipografia tática em estilo telemetria com fontes monoespaçadas legíveis e de alto contraste.
+  - Zero poluição visual: elementos limpos, sem animações contínuas que degradem bateria ou desempenho da GPU.
+
+- **Central de Comando & Speed Dial Deck**:
+  - Anel duplo de telemetria holográfica em degradê ciano/violeta exibindo status do runtime do Servo e arquitetura de 64 bits.
+  - Barra de telemetria em tempo real com indicadores de proteção (`ESCUDO ATIVO`, `SERVO RUST`, `60+ FPS LOCK`).
+  - Módulos táticos de lançamento rápido organizados por pods (`SERVO RUNTIME`, `RUST CRATES`, `GITHUB CORE`, `WIKIPEDIA`, `DUCKDUCKGO`, `CYBER NEWS`).
+  - Botão de desdobramento de novos alvos (`+ DEPLOY POD`).
+
+- **Cápsula de Navegação Omnibox Flutuante**:
+  - Cápsula flutuante HUD com borda iluminada em degradê e indicador de encriptação em tempo real (Verde Matriz para TLS/HTTPS, Ciano para sistema interno e Vermelho Alerta para tráfego puro).
+  - Dropdown tático de predição de busca (`// RADAR QUERY PREDICTIONS`) com tags de identificação (`[SEARCH]`, `[SAVED]`, `[HISTORY]`, `[WEB POD]`).
+  - Indicador numérico de módulos ativos em formato de munição (`[01]`, `[02]`, etc.).
+
+- **Matriz Tática de Abas (Modules vs Stealth Ops)**:
+  - Seletor segmentado com alternância rápida entre módulos normais e operações secretas (`STEALTH`).
+  - Visualização em cartões de circuito cibernético com botão de encerramento rápido e botão de expansão inferior em degradê tático.
+
+- **Terminal de Telemetria e Defesa do Site**:
+  - Terminal de diagnóstico de segurança com status do túnel criptografado, cópia de payload, transmissão e edição com um toque.
+  - Painel de expurgo seguro de cookies e armazenamento local por domínio.
+  - Chaves de alternância com iluminação de neon para cada protocolo: Localização, Câmera, Microfone e Notificações Push.
+
+- **Sheets de Histórico, Favoritos, Downloads e Flags**:
+  - **Histórico**: Registro tático de telemetria com busca em tempo real e botão de expurgo instantâneo.
+  - **Favoritos**: Targets fixados com badges em Cyber Amber.
+  - **Downloads**: Monitor de transferência de pacotes de dados com progresso em neon.
+  - **Servo Flags**: Painel de overclocking do motor com flags de hardware (WebGPU wgpu, dark mode forçado, etc.).
+
+---
+
+## 🌟 Recursos do Motor Servo (Rust + SpiderMonkey)
 
 - **Rolagem Nativa Fluida no Motor Servo**:
   - Eventos de toque (`touchDown`, `touchMove`, `touchUp`, pinch e drag) transmitidos diretamente para o backend EGL/Rust do Servo sem interceptação de ponteiros.
   - Navegação suave por gestos de voltar integrados ao sistema operacional Android (`Predictive Back / BackHandler`).
 
-- **Escrita Inteligente e Sugestões na Omnibox**:
-  - Autocompletar inteligente em tempo real enquanto o usuário digita na barra de endereços.
-  - Sugestões integradas de sites populares, termos de busca, favoritos salvos e histórico recente.
-
-- **Painel de Segurança e Permissões do Site**:
-  - Acesso direto com 1 toque ao ícone de cadeado/segurança na barra de pesquisa.
-  - Detalhes de criptografia e status HTTPS/TLS ou HTTP.
-  - Visualização, cópia com 1 toque, compartilhamento e edição da URL completa.
-  - Gerenciamento e limpeza de cookies e dados de armazenamento local por domínio.
-  - Controle granular de permissões por site: Localização, Câmera, Microfone, Notificações e Navieer Shield (Bloqueio de Anúncios e Rastreadores).
-
-- **Motor Servo Nativo (Rust + SpiderMonkey)**:
-  - 100% livre de Chromium e Gecko.
-  - Paralelismo avançado de layout e renderização com segurança de memória em Rust.
-  - Suporte a flags experimentais em `navieer://flags` (WebGPU wgpu, modo escuro forçado, etc.).
+- **100% Livre de Chromium e Gecko**:
+  - Paralelismo avançado de layout e renderização com segurança de memória garantida em Rust.
+  - Aceleração por hardware OpenGL ES 3.0 e suporte a WebGPU.
 
 ---
 
