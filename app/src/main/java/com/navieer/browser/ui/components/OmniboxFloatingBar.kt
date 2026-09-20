@@ -2,7 +2,9 @@ package com.navieer.browser.ui.components
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,8 +25,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -32,6 +36,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.navieer.browser.data.SearchSuggestion
+import com.navieer.browser.ui.theme.CyberGamerTokens
 
 @Composable
 fun OmniboxFloatingBar(
@@ -80,15 +85,24 @@ fun OmniboxFloatingBar(
                 .fillMaxWidth()
                 .padding(horizontal = 14.dp, vertical = 6.dp)
         ) {
-            // Pill Shape Floating Container (M3 Expressive)
+            // Cyber HUD Floating Capsule
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(58.dp)
-                    .shadow(elevation = 6.dp, shape = RoundedCornerShape(29.dp), clip = false),
-                shape = RoundedCornerShape(29.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                tonalElevation = 3.dp
+                    .shadow(elevation = 10.dp, shape = RoundedCornerShape(20.dp), clip = false),
+                shape = RoundedCornerShape(20.dp),
+                color = CyberGamerTokens.TechSurface.copy(alpha = 0.95f),
+                border = BorderStroke(
+                    1.dp,
+                    Brush.horizontalGradient(
+                        listOf(
+                            CyberGamerTokens.NeonCyan.copy(alpha = 0.45f),
+                            CyberGamerTokens.NeonViolet.copy(alpha = 0.45f)
+                        )
+                    )
+                ),
+                tonalElevation = 4.dp
             ) {
                 Row(
                     modifier = Modifier
@@ -96,7 +110,7 @@ fun OmniboxFloatingBar(
                         .padding(horizontal = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Security Lock Icon -> Triggers Site Security & Permissions Modal Sheet
+                    // Security Shield / Encryption Status Button
                     IconButton(
                         onClick = onOpenSiteInfo,
                         modifier = Modifier
@@ -105,19 +119,22 @@ fun OmniboxFloatingBar(
                     ) {
                         val isHttps = url.startsWith("https://")
                         val isLocal = url.startsWith("navieer://") || url.isEmpty()
-                        Icon(
-                            imageVector = if (isLocal) Icons.Default.Info
-                            else if (isHttps) Icons.Default.Lock
-                            else Icons.Default.Warning,
-                            contentDescription = "Informações e Segurança do Site",
-                            tint = if (isLocal) MaterialTheme.colorScheme.primary
-                            else if (isHttps) Color(0xFF16A34A)
-                            else Color(0xFFDC2626),
-                            modifier = Modifier.size(20.dp)
-                        )
+
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = if (isLocal) Icons.Default.Info
+                                else if (isHttps) Icons.Default.Lock
+                                else Icons.Default.Warning,
+                                contentDescription = "Informações e Segurança do Site",
+                                tint = if (isLocal) CyberGamerTokens.NeonCyan
+                                else if (isHttps) CyberGamerTokens.MatrixGreen
+                                else CyberGamerTokens.OverheatRed,
+                                modifier = Modifier.size(19.dp)
+                            )
+                        }
                     }
 
-                    // Reader Mode Button (Direct in Omnibox)
+                    // Reader Mode Tactical Optic Button
                     if (url.isNotBlank() && !url.startsWith("navieer://")) {
                         IconButton(
                             onClick = onToggleReaderMode,
@@ -128,13 +145,13 @@ fun OmniboxFloatingBar(
                             Icon(
                                 imageVector = Icons.Outlined.Article,
                                 contentDescription = "Modo Leitura",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(19.dp)
+                                tint = CyberGamerTokens.TextTechCyan,
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
 
-                    // URL Input / Omnibox Text with Smart Autocomplete Trigger
+                    // Tactical URL / Query Input
                     OutlinedTextField(
                         value = textInput,
                         onValueChange = {
@@ -149,13 +166,19 @@ fun OmniboxFloatingBar(
                         singleLine = true,
                         placeholder = {
                             Text(
-                                "Pesquisar ou digitar URL",
-                                fontSize = 13.sp,
+                                "TARGET URL // SEARCH...",
+                                fontSize = 12.sp,
+                                fontFamily = FontFamily.Monospace,
+                                color = CyberGamerTokens.TextMuted,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
                         },
-                        textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
+                        textStyle = LocalTextStyle.current.copy(
+                            fontSize = 13.sp,
+                            fontFamily = FontFamily.Monospace,
+                            color = CyberGamerTokens.TextHoloWhite
+                        ),
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Uri,
                             imeAction = ImeAction.Go
@@ -179,7 +202,7 @@ fun OmniboxFloatingBar(
                                     Icon(
                                         imageVector = Icons.Default.Clear,
                                         contentDescription = "Limpar texto",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        tint = CyberGamerTokens.TextMuted,
                                         modifier = Modifier.size(16.dp)
                                     )
                                 }
@@ -189,11 +212,12 @@ fun OmniboxFloatingBar(
                             focusedContainerColor = Color.Transparent,
                             unfocusedContainerColor = Color.Transparent,
                             focusedBorderColor = Color.Transparent,
-                            unfocusedBorderColor = Color.Transparent
+                            unfocusedBorderColor = Color.Transparent,
+                            cursorColor = CyberGamerTokens.NeonCyan
                         )
                     )
 
-                    // Reload or Stop Button
+                    // Reload or Abort Button
                     if (isLoading) {
                         IconButton(
                             onClick = onStop,
@@ -201,7 +225,12 @@ fun OmniboxFloatingBar(
                                 .size(34.dp)
                                 .clip(CircleShape)
                         ) {
-                            Icon(Icons.Default.Close, contentDescription = "Parar", modifier = Modifier.size(18.dp))
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "Parar",
+                                tint = CyberGamerTokens.OverheatRed,
+                                modifier = Modifier.size(18.dp)
+                            )
                         }
                     } else if (url.isNotEmpty() && !url.startsWith("navieer://")) {
                         IconButton(
@@ -210,11 +239,16 @@ fun OmniboxFloatingBar(
                                 .size(34.dp)
                                 .clip(CircleShape)
                         ) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Recarregar", modifier = Modifier.size(18.dp))
+                            Icon(
+                                Icons.Default.Refresh,
+                                contentDescription = "Recarregar",
+                                tint = CyberGamerTokens.NeonCyan,
+                                modifier = Modifier.size(18.dp)
+                            )
                         }
                     }
 
-                    // Desktop / Mobile Mode Toggle
+                    // Tactical Viewport Toggle (Desktop / Mobile Mode)
                     IconButton(
                         onClick = onToggleDesktop,
                         modifier = Modifier
@@ -224,29 +258,32 @@ fun OmniboxFloatingBar(
                         Icon(
                             imageVector = if (isDesktopMode) Icons.Outlined.DesktopWindows else Icons.Outlined.PhoneAndroid,
                             contentDescription = "Alternar Modo Desktop/Mobile",
-                            tint = if (isDesktopMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = if (isDesktopMode) CyberGamerTokens.NeonCyan else CyberGamerTokens.TextMuted,
                             modifier = Modifier.size(18.dp)
                         )
                     }
 
-                    // Tab Count Button Badge with smooth squircle
-                    Box(
+                    // Tactical Module/Tab Counter Badge
+                    Surface(
                         modifier = Modifier
-                            .size(32.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.primaryContainer)
+                            .padding(horizontal = 4.dp)
+                            .clip(RoundedCornerShape(8.dp))
                             .clickable { onOpenTabs() },
-                        contentAlignment = Alignment.Center
+                        shape = RoundedCornerShape(8.dp),
+                        color = CyberGamerTokens.TechSurfaceHigh,
+                        border = BorderStroke(1.dp, CyberGamerTokens.NeonCyan.copy(alpha = 0.5f))
                     ) {
                         Text(
-                            text = "$tabCount",
+                            text = if (tabCount < 10) "0$tabCount" else "$tabCount",
                             fontSize = 11.sp,
+                            fontFamily = FontFamily.Monospace,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                            color = CyberGamerTokens.NeonCyan,
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 5.dp)
                         )
                     }
 
-                    // More Options Dropdown
+                    // Command Center Dropdown Menu
                     Box {
                         IconButton(
                             onClick = { showMenu = true },
@@ -254,66 +291,77 @@ fun OmniboxFloatingBar(
                                 .size(34.dp)
                                 .clip(CircleShape)
                         ) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "Mais opções", modifier = Modifier.size(18.dp))
+                            Icon(
+                                Icons.Default.MoreVert,
+                                contentDescription = "Menu de Ações",
+                                tint = CyberGamerTokens.TextHoloWhite,
+                                modifier = Modifier.size(18.dp)
+                            )
                         }
 
                         DropdownMenu(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false },
-                            shape = RoundedCornerShape(20.dp)
+                            shape = RoundedCornerShape(18.dp),
+                            modifier = Modifier
+                                .background(CyberGamerTokens.TechSurface)
+                                .border(
+                                    BorderStroke(1.dp, CyberGamerTokens.NeonCyan.copy(alpha = 0.35f)),
+                                    shape = RoundedCornerShape(18.dp)
+                                )
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Favoritos") },
-                                leadingIcon = { Icon(Icons.Default.Bookmark, null) },
+                                text = { Text("Favoritos", fontFamily = FontFamily.Monospace, color = CyberGamerTokens.TextHoloWhite) },
+                                leadingIcon = { Icon(Icons.Default.Bookmark, null, tint = CyberGamerTokens.NeonCyan) },
                                 onClick = {
                                     showMenu = false
                                     onOpenBookmarks()
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Adicionar aos Favoritos") },
-                                leadingIcon = { Icon(Icons.Default.Star, null) },
+                                text = { Text("Salvar Favorito", fontFamily = FontFamily.Monospace, color = CyberGamerTokens.TextHoloWhite) },
+                                leadingIcon = { Icon(Icons.Default.Star, null, tint = CyberGamerTokens.CyberAmber) },
                                 onClick = {
                                     showMenu = false
                                     onAddBookmark()
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Histórico") },
-                                leadingIcon = { Icon(Icons.Default.History, null) },
+                                text = { Text("Histórico de Acesso", fontFamily = FontFamily.Monospace, color = CyberGamerTokens.TextHoloWhite) },
+                                leadingIcon = { Icon(Icons.Default.History, null, tint = CyberGamerTokens.ElectricBlue) },
                                 onClick = {
                                     showMenu = false
                                     onOpenHistory()
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Downloads") },
-                                leadingIcon = { Icon(Icons.Default.Download, null) },
+                                text = { Text("Payloads / Downloads", fontFamily = FontFamily.Monospace, color = CyberGamerTokens.TextHoloWhite) },
+                                leadingIcon = { Icon(Icons.Default.Download, null, tint = CyberGamerTokens.MatrixGreen) },
                                 onClick = {
                                     showMenu = false
                                     onOpenDownloads()
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Segurança do Site") },
-                                leadingIcon = { Icon(Icons.Outlined.Shield, null) },
+                                text = { Text("Telemetria e Segurança", fontFamily = FontFamily.Monospace, color = CyberGamerTokens.TextHoloWhite) },
+                                leadingIcon = { Icon(Icons.Outlined.Shield, null, tint = CyberGamerTokens.NeonViolet) },
                                 onClick = {
                                     showMenu = false
                                     onOpenSiteInfo()
                                 }
                             )
-                            HorizontalDivider()
+                            HorizontalDivider(color = CyberGamerTokens.TechSurfaceBorder)
                             DropdownMenuItem(
-                                text = { Text("Servo Flags (navieer://flags)") },
-                                leadingIcon = { Icon(Icons.Default.Flag, null) },
+                                text = { Text("Servo Overclock // Flags", fontFamily = FontFamily.Monospace, color = CyberGamerTokens.NeonCyan) },
+                                leadingIcon = { Icon(Icons.Default.Flag, null, tint = CyberGamerTokens.NeonCyan) },
                                 onClick = {
                                     showMenu = false
                                     onOpenFlags()
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Configurações") },
-                                leadingIcon = { Icon(Icons.Default.Settings, null) },
+                                text = { Text("Configurações do Sistema", fontFamily = FontFamily.Monospace, color = CyberGamerTokens.TextHoloWhite) },
+                                leadingIcon = { Icon(Icons.Default.Settings, null, tint = CyberGamerTokens.TextMuted) },
                                 onClick = {
                                     showMenu = false
                                     onOpenSettings()
@@ -324,7 +372,7 @@ fun OmniboxFloatingBar(
                 }
             }
 
-            // Animated Loading Progress Bar
+            // Cyberpunk Neon Loading Indicator
             if (isLoading) {
                 LinearProgressIndicator(
                     modifier = Modifier
@@ -332,88 +380,127 @@ fun OmniboxFloatingBar(
                         .padding(horizontal = 24.dp, vertical = 2.dp)
                         .height(3.dp)
                         .clip(RoundedCornerShape(3.dp)),
-                    color = MaterialTheme.colorScheme.primary
+                    color = CyberGamerTokens.NeonCyan,
+                    trackColor = CyberGamerTokens.NeonViolet.copy(alpha = 0.2f)
                 )
             }
 
-            // Smart Autocomplete Suggestions Dropdown Card
+            // Smart Autocomplete Suggestions HUD Card
             if (isEditing && suggestions.isNotEmpty()) {
                 Spacer(Modifier.height(8.dp))
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .shadow(elevation = 8.dp, shape = RoundedCornerShape(24.dp), clip = false),
-                    shape = RoundedCornerShape(24.dp),
+                        .shadow(elevation = 12.dp, shape = RoundedCornerShape(20.dp), clip = false)
+                        .border(
+                            BorderStroke(1.dp, CyberGamerTokens.NeonCyan.copy(alpha = 0.35f)),
+                            shape = RoundedCornerShape(20.dp)
+                        ),
+                    shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        containerColor = CyberGamerTokens.TechSurfaceHigh.copy(alpha = 0.98f)
                     )
                 ) {
-                    LazyColumn(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 8.dp)
+                            .padding(8.dp)
                     ) {
-                        items(suggestions) { suggestion ->
-                            val icon = when (suggestion.typeIcon) {
-                                "search" -> Icons.Default.Search
-                                "history" -> Icons.Default.History
-                                "bookmark" -> Icons.Default.Bookmark
-                                else -> Icons.Default.Info
-                            }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 10.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "// RADAR QUERY PREDICTIONS",
+                                fontSize = 10.sp,
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.Bold,
+                                color = CyberGamerTokens.NeonCyan
+                            )
+                            Text(
+                                text = "ONLINE",
+                                fontSize = 9.sp,
+                                fontFamily = FontFamily.Monospace,
+                                color = CyberGamerTokens.MatrixGreen
+                            )
+                        }
 
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .clickable {
-                                        isEditing = false
-                                        textInput = suggestion.targetUrl
-                                        focusManager.clearFocus()
-                                        onNavigate(suggestion.targetUrl)
-                                    }
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 4.dp),
+                            color = CyberGamerTokens.TechSurfaceBorder
+                        )
+
+                        LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                            items(suggestions) { suggestion ->
+                                val (tag, tagColor) = when (suggestion.typeIcon) {
+                                    "search" -> Pair("SEARCH", CyberGamerTokens.NeonCyan)
+                                    "history" -> Pair("HISTORY", CyberGamerTokens.ElectricBlue)
+                                    "bookmark" -> Pair("SAVED", CyberGamerTokens.CyberAmber)
+                                    else -> Pair("WEB POD", CyberGamerTokens.NeonViolet)
+                                }
+
+                                Row(
                                     modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.surfaceContainerHighest),
-                                    contentAlignment = Alignment.Center
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .clickable {
+                                            isEditing = false
+                                            textInput = suggestion.targetUrl
+                                            focusManager.clearFocus()
+                                            onNavigate(suggestion.targetUrl)
+                                        }
+                                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = tagColor.copy(alpha = 0.15f),
+                                        border = BorderStroke(1.dp, tagColor.copy(alpha = 0.4f))
+                                    ) {
+                                        Text(
+                                            text = tag,
+                                            fontSize = 9.sp,
+                                            fontFamily = FontFamily.Monospace,
+                                            fontWeight = FontWeight.Bold,
+                                            color = tagColor,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+
+                                    Spacer(Modifier.width(10.dp))
+
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = suggestion.title,
+                                            style = MaterialTheme.typography.bodyMedium.copy(
+                                                fontWeight = FontWeight.SemiBold,
+                                                fontFamily = FontFamily.Monospace
+                                            ),
+                                            color = CyberGamerTokens.TextHoloWhite,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = suggestion.subtitle,
+                                            style = MaterialTheme.typography.bodySmall.copy(
+                                                fontFamily = FontFamily.Monospace
+                                            ),
+                                            color = CyberGamerTokens.TextTechCyan,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+
                                     Icon(
-                                        imageVector = icon,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(18.dp)
+                                        imageVector = Icons.Default.ArrowForward,
+                                        contentDescription = "Carregar",
+                                        tint = CyberGamerTokens.NeonCyan,
+                                        modifier = Modifier.size(16.dp)
                                     )
                                 }
-
-                                Spacer(Modifier.width(14.dp))
-
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = suggestion.title,
-                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Text(
-                                        text = suggestion.subtitle,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-
-                                Icon(
-                                    imageVector = Icons.Default.ArrowForward,
-                                    contentDescription = "Preencher",
-                                    tint = MaterialTheme.colorScheme.outline,
-                                    modifier = Modifier.size(16.dp)
-                                )
                             }
                         }
                     }
