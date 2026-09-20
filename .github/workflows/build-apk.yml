@@ -71,7 +71,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -B debug-log
-          tail -n 120 /tmp/build.log > build-failure.txt
+          grep -C 2 -E "e: |Unresolved|cannot find|CompilationErrorException" /tmp/build.log > build-failure.txt || tail -n 400 /tmp/build.log > build-failure.txt
           git add build-failure.txt
           git commit -m "debug: build failure log" || true
           git push -f origin debug-log
