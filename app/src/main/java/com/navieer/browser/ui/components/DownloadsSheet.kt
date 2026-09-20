@@ -31,14 +31,7 @@ fun DownloadsSheet(
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        dragHandle = {
-            BottomSheetDefaults.DragHandle(
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                width = 48.dp,
-                height = 5.dp,
-                shape = RoundedCornerShape(10.dp)
-            )
-        }
+        dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
         Column(
             modifier = Modifier

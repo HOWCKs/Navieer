@@ -58,15 +58,7 @@ fun SiteInfoSheet(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        tonalElevation = 6.dp,
-        dragHandle = {
-            BottomSheetDefaults.DragHandle(
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                width = 48.dp,
-                height = 5.dp,
-                shape = RoundedCornerShape(10.dp)
-            )
-        }
+        dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
         Column(
             modifier = Modifier
