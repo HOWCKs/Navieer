@@ -55,7 +55,17 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build Navieer Release APK with Gradle
-        run: ./gradlew assembleRelease --stacktrace
+        shell: bash
+        run: |
+          ./gradlew assembleRelease --stacktrace --no-daemon 2>&1 | tee /tmp/build.log
+          STATUS=${PIPESTATUS[0]}
+          if [ $STATUS -ne 0 ]; then
+            echo "Gradle failed with exit code $STATUS"
+            grep -E "e: |Unresolved|cannot find" /tmp/build.log | head -n 15 | while IFS= read -r line; do
+              echo "::error title=Compiler Error::$line"
+            done
+            exit $STATUS
+          fi
 
       - name: Prepare APK Artifact
         run: |
